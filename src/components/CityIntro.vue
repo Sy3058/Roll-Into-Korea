@@ -8,7 +8,7 @@
       {{ info.description }}
     </p>
 
-    <button class="back-btn" @click="$router.push('/')">
+    <button class="back-btn" @click="$router.back()">
       ← 돌아가기
     </button>
   </div>

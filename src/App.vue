@@ -1,17 +1,14 @@
 <template>
-  <div>
-    <Board />
-  </div>
+  <router-view v-slot="{ Component }">
+    <keep-alive>
+      <component :is="Component" />
+    </keep-alive>
+  </router-view>
 </template>
 
-<script>
-import Board from "./components/Board.vue";
-import CityIntro from "./components/CityIntro.vue";
 
+<script>
 export default {
-  name: "App",
-  components: {
-    Board, CityIntro
-  },
+  name: "App"
 };
 </script>

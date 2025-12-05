@@ -40,9 +40,10 @@
           class="cell"
           :class="[
             cells[getOuterIndex(i - 1)].type,
-            getShapeClass(getOuterIndex(i - 1))
+            getShapeClass(getOuterIndex(i - 1)),
+            { clickable: playerPos === getOuterIndex(i - 1) }
           ]"
-          @click="goToCity(cells[getOuterIndex(i - 1)])">
+          @click="playerPos === getOuterIndex(i - 1) && goToCity(cells[getOuterIndex(i - 1)])">
 
           <!-- 말 표시 -->
           <div v-if="playerPos === getOuterIndex(i - 1)" class="piece">🔵</div>
@@ -385,4 +386,19 @@ export default {
 .dice.show-6 .pos6,
 .dice.show-6 .pos7,
 .dice.show-6 .pos9 { opacity: 1; }
+
+.cell.clickable {
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  cursor: pointer;
+}
+
+.cell.clickable:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.cell.clickable:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
 </style>
