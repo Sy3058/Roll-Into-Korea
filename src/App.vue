@@ -1,14 +1,11 @@
+<script setup lang="ts"></script>
+
 <template>
-  <router-view v-slot="{ Component }">
-    <keep-alive>
-      <component :is="Component" />
-    </keep-alive>
-  </router-view>
+  <h1>You did it!</h1>
+  <p>
+    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
+    documentation
+  </p>
 </template>
 
-
-<script>
-export default {
-  name: "App"
-};
-</script>
+<style scoped></style>
