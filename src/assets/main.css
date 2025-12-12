@@ -1,0 +1,45 @@
+:root {
+  /* =========================================
+     기본 팔레트
+     ========================================= */
+  --palette-yellow: #fbbf24;
+  --palette-mint: #dcfce7;
+  --palette-red: #ef4444;
+  --palette-blue: #3b82f6;
+  --palette-gray-900: #111827;
+  --palette-gray-500: #6b7280;
+  --palette-gray-100: #f3f4f6;
+  --palette-white: #ffffff;
+
+  /* =========================================
+     테마
+     - 위에서 정의한 물감을 용도에 맞게 연결
+     ========================================= */
+
+  /* 브랜드/UI */
+  --color-primary: var(--palette-yellow); /* 메인 버튼 등 */
+  --color-text-main: var(--palette-gray-900); /* 본문 텍스트 */
+  --color-text-sub: var(--palette-gray-500); /* 설명 텍스트 */
+
+  /* 게임 보드 */
+  --bg-board: var(--palette-mint); /* 보드판 배경 */
+  --bg-page: var(--palette-gray-100); /* 전체 페이지 배경 */
+  --border-board: var(--palette-gray-900); /* 보드판 테두리 */
+
+  /* 타일(땅) */
+  --bg-tile: var(--palette-white);
+  --bg-tile-corner: var(--palette-gray-100);
+  --border-tile: var(--palette-gray-500);
+
+  /* 플레이어 말 */
+  --color-p1: var(--palette-red);
+  --color-p2: var(--palette-blue);
+}
+
+/* 기본 설정 */
+body {
+  background-color: var(--bg-page);
+  color: var(--color-text-main);
+  margin: 0;
+  font-family: 'Noto Sans KR', sans-serif;
+}
