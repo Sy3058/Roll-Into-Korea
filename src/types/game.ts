@@ -1,1 +1,48 @@
 // 게임 데이터 타입
+import type { Ref } from 'vue';
+import type { Graphics, Texture, Text } from 'pixi.js';
+
+// Graphics에 textNode 속성 추가
+export interface TileGraphics extends Graphics {
+  textNode?: Text;
+}
+
+// 주사위 텍스처 배열
+export type DiceTextureArray = (Texture | null)[];
+
+// getRectForIndex 함수가 반환하는 좌표 및 크기 정보
+export type BoardRect = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+};
+
+export type TileData = {
+  id: number;
+  type: 'corner' | 'path'; // 코너인지 일반 길인지 구분
+  rect?: BoardRect; // 시각적 위치 정보
+};
+
+export type PlayerData = {
+  id: string;
+  name: string;
+  position: number; // 현재 타일 인덱스 (0 ~ 39)
+  color: number; // 플레이어 색상 (Hex)
+  money?: number;
+};
+
+export type GameState = {
+  players: PlayerData[];
+  currentTurnPlayerId: string;
+  isGameActive: boolean;
+};
+
+// Composable 반환 타입
+export interface UseDiceReturn {
+  isRolling: Ref<boolean>;
+  isLoaded: Ref<boolean>;
+  diceTextures: Ref<DiceTextureArray>;
+  loadDiceAssets: () => Promise<void>;
+  generateRoll: () => number;
+}
