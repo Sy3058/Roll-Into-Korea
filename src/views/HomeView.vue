@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useRouter } from 'vue-router';
 
-const router = useRouter()
+const router = useRouter();
 
 const startGame = () => {
   // 주사위 클릭 시 게임 화면으로 이동
-  router.push('/game')
-}
+  router.push('/game');
+};
 </script>
 
 <template>
@@ -18,12 +18,24 @@ const startGame = () => {
     <div class="content-layer">
       <div class="scene">
         <div class="cube" @click="startGame">
-          <div class="face front">1</div>
-          <div class="face back">6</div>
-          <div class="face right">3</div>
-          <div class="face left">4</div>
-          <div class="face top">5</div>
-          <div class="face bottom">2</div>
+          <div class="face front">
+            <img src="../../public/assets/dice/dieWhite_border1.png" alt="1" />
+          </div>
+          <div class="face back">
+            <img src="../../public/assets/dice/dieWhite_border6.png" alt="6" />
+          </div>
+          <div class="face right">
+            <img src="../../public/assets/dice/dieWhite_border3.png" alt="3" />
+          </div>
+          <div class="face left">
+            <img src="../../public/assets/dice/dieWhite_border4.png" alt="4" />
+          </div>
+          <div class="face top">
+            <img src="../../public/assets/dice/dieWhite_border5.png" alt="5" />
+          </div>
+          <div class="face bottom">
+            <img src="../../public/assets/dice/dieWhite_border2.png" alt="2" />
+          </div>
         </div>
       </div>
 
@@ -114,36 +126,40 @@ const startGame = () => {
   position: absolute;
   width: 15vh;
   height: 15vh;
-  background: var(--palette-white);
-  border: 0.5vh solid var(--palette-gray-900);
+  background: transparent;
   border-radius: 2vh;
-  color: var(--palette-gray-900);
-  font-size: 6vh;
-  font-weight: bold;
+  /* Flex로 이미지 중앙 정렬 */
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 0 2vh rgba(0, 0, 0, 0.1);
+}
+
+.face img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* 이미지 찌그러짐 방지 */
+  border-radius: 2.5vh;
+  box-shadow: inset 0 0 2vh rgba(0, 0, 0, 0.2);
 }
 
 /* 각 면의 위치를 3D로 잡기 */
 .front {
-  transform: rotateY(0deg) translateZ(7.5vh);
+  transform: rotateY(0deg) translateZ(7.48vh) scale(1.01);
 }
 .right {
-  transform: rotateY(90deg) translateZ(7.5vh);
+  transform: rotateY(90deg) translateZ(7.48vh) scale(1.01);
 }
 .back {
-  transform: rotateY(180deg) translateZ(7.5vh);
+  transform: rotateY(180deg) translateZ(7.48vh) scale(1.01);
 }
 .left {
-  transform: rotateY(-90deg) translateZ(7.5vh);
+  transform: rotateY(-90deg) translateZ(7.48vh) scale(1.01);
 }
 .top {
-  transform: rotateX(90deg) translateZ(7.5vh);
+  transform: rotateX(90deg) translateZ(7.48vh) scale(1.01);
 }
 .bottom {
-  transform: rotateX(-90deg) translateZ(7.5vh);
+  transform: rotateX(-90deg) translateZ(7.48vh) scale(1.01);
 }
 
 /* --- 애니메이션 정의 --- */
