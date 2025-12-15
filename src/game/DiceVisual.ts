@@ -64,7 +64,7 @@ export class DiceVisual {
     return new Promise((resolve) => {
       // 위치 및 상태 초기화
       sprite.visible = true;
-      sprite.x = 150; // 가로 중앙에서 굴리기
+      sprite.x = 120; // 가로 중앙에서 굴리기
       sprite.y = screenH / 2; // 세로 중앙보다 조금 위 (위에서 떨어지는 효과)
       sprite.rotation = 0; // 회전 초기화
       sprite.scale.set(0); // 주사위 튀어나오는 효과
