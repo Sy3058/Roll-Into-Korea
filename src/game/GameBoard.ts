@@ -1,5 +1,14 @@
 // PixiJS 관리
-import { Application, Container, Graphics } from 'pixi.js';
+import {
+  Application,
+  Assets,
+  Container,
+  Graphics,
+  Sprite,
+  Text,
+  TextStyle,
+  Texture,
+} from 'pixi.js';
 import gsap from 'gsap';
 import { DiceVisual } from './DiceVisual';
 import { BoardCard } from './BoardCard';
@@ -9,7 +18,7 @@ export class GameBoard {
   private app: Application;
   private boardContainer!: Container;
   private uiContainer!: Container;
-  private background!: Graphics;
+  private background!: Sprite;
   private playerSprite!: Graphics;
   private tileSprites: BoardCard[] = [];
 
@@ -50,6 +59,12 @@ export class GameBoard {
     // div 안에 canvas 넣기
     options.container.appendChild(this.app.canvas as HTMLCanvasElement);
 
+    try {
+      await Assets.load('/assets/background.png');
+    } catch (e) {
+      console.error('배경 이미지 로드 실패:', e);
+    }
+
     // Setup Scene Layer
     this.setupScene();
 
@@ -67,17 +82,67 @@ export class GameBoard {
    * 화면 레이어 구성
    */
   private setupScene() {
-    // Layer 1: Background
-    this.background = new Graphics();
-    this.background.rect(0, 0, this.app.screen.width, this.app.screen.height).fill(0x222222);
-    this.app.stage.addChild(this.background);
-
-    // Layer 2: Board
+    // Layer 1: Board
     this.boardContainer = new Container();
     this.boardContainer.rotation = (-3 * Math.PI) / 4;
     this.app.stage.addChild(this.boardContainer);
 
-    // Layer 3: UI (주사위)
+    // Board 안에 배경 추가
+    const bgTexture = Texture.from('/assets/background.png');
+    // 배경을 Sprite로 생성
+    this.background = new Sprite(bgTexture);
+
+    // 중심점 설정
+    this.background.anchor.set(0.5);
+
+    // 배경을 board 안에 배치
+    this.boardContainer.addChild(this.background);
+    this.background.rotation = -this.boardContainer.rotation; // 상쇄 회전 필수!!
+
+    // 배경 크기 설정 (보드 크기보다 크게)
+    const totalUnits = this.UNIT_H * 2 + this.TILES_PER_SIDE * this.UNIT_W;
+    const boardSizePx = totalUnits * this.BASE_UNIT_PX;
+
+    // 이미지 크기 보드 크기 2배로 키우기
+    const scale = (boardSizePx * 4.0) / this.background.texture.width;
+    this.background.scale.set(scale);
+
+    // 배경 위치를 보드 중앙에 맞춤
+    this.background.x = 0;
+    this.background.y = 0;
+
+    // 게임판 안쪽 채우기
+    const innerSize = this.TILES_PER_SIDE * this.UNIT_W * this.BASE_UNIT_PX;
+
+    const centerFloor = new Graphics();
+
+    centerFloor.rect(-innerSize / 2, -innerSize / 2, innerSize, innerSize).fill(0xe6f3f5);
+    this.boardContainer.addChild(centerFloor);
+
+    // 중앙에 로고 넣기
+    // TODO: 로고 이미지로 만들어서 넣기
+    const centerText = new Text({
+      text: '굴려서 \n한국 속으로', // 원하는 텍스트
+      style: new TextStyle({
+        fontFamily: 'Arial',
+        fontSize: boardSizePx * 0.12, // 보드 크기에 비례해서 폰트 크기 설정
+        fontWeight: 'bold',
+        fill: '#000000', // 글자색
+        align: 'center',
+        dropShadow: true,
+        dropShadowColor: 'gray',
+        dropShadowBlur: 4,
+        dropShadowDistance: 6,
+      }),
+    });
+    centerText.anchor.set(0.5);
+    centerText.x = 0;
+    centerText.y = 0;
+
+    centerText.rotation = -this.boardContainer.rotation;
+    this.boardContainer.addChild(centerText);
+
+    // Layer 2: UI (주사위)
     this.uiContainer = new Container();
     this.app.stage.addChild(this.uiContainer);
 
@@ -209,10 +274,10 @@ export class GameBoard {
    * 화면 크기 변경 감지
    */
   private onWindowResize() {
-    if (this.background && this.app) {
-      this.background.clear();
-      this.background.rect(0, 0, this.app.screen.width, this.app.screen.height).fill(0x222222);
-    }
+    if (!this.app || !this.background) return;
+
+    this.app.renderer.resize(window.innerWidth, window.innerHeight);
+    this.updateCamera();
   }
 
   /**
