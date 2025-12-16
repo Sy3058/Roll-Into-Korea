@@ -12,7 +12,7 @@ import {
 import gsap from 'gsap';
 import { DiceVisual } from './DiceVisual';
 import { BoardCard } from './BoardCard';
-import type { BoardRect, GameOptions } from '@/types/game';
+import type { BoardRect, GameOptions, TileInfo } from '@/types/game';
 
 export class GameBoard {
   private app: Application;
@@ -322,6 +322,17 @@ export class GameBoard {
         ease: 'power1.out',
       });
     }
+  }
+
+  public getCurrentTileInfo(): TileInfo {
+    const index = this.currentTileIndex;
+    const card = this.tileSprites[index];
+
+    return {
+      index,
+      name: card?.getName(),
+      type: card?.getType(),
+    };
   }
 
   /**

@@ -1,5 +1,5 @@
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
-import type { BoardCardOptions } from '@/types/game';
+import type { BoardCardOptions, CardType } from '@/types/game';
 
 //TODO: (5, 15, 25, 35)에는 축제 카드 배치, 코너에 뭐 넣을지 결정
 export class BoardCard extends Container {
@@ -194,5 +194,19 @@ export class BoardCard extends Container {
     label.x = width / 2;
     label.y = height * 0.85;
     this.contentContainer.addChild(label);
+  }
+
+  /**
+   * 외부에서 이름을 조회할 수 있는 Getter
+   */
+  public getName(): string {
+    return (this.options.name || '') as string;
+  }
+
+  /**
+   * 외부에서 타입을 조회할 수 있는 Getter
+   */
+  public getType(): CardType {
+    return this.options.type || 'basic';
   }
 }

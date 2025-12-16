@@ -48,6 +48,12 @@ export type TileData = {
   rect?: BoardRect; // 시각적 위치 정보
 };
 
+export interface TileInfo {
+  index: number;
+  name: string;
+  type: CardType;
+}
+
 // =================== Player ===================
 export type PlayerData = {
   id: string;

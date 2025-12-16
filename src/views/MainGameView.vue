@@ -22,6 +22,13 @@
         </div>
       </div>
     </div>
+
+    <StreetViewModal
+      :is-open="showModal"
+      :location-name="currentLocName"
+      @close="showModal = false"
+      @enter-streetview="handleEnterStreetView"
+    />
   </div>
 </template>
 
@@ -29,6 +36,11 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useDice } from '@/composables/useDice';
 import { GameBoard } from '@/game/GameBoard';
+import StreetViewModal from '@/components/ui/StreetViewModal.vue';
+
+// 모달 상태 관리
+const showModal = ref(false);
+const currentLocName = ref('');
 
 // Composable States
 const { isRolling, isLoaded: diceLoaded, diceTextures, loadDiceAssets, generateRoll } = useDice();
@@ -78,6 +90,14 @@ async function handleRollClick() {
   // Game Engine에 있는 playTurn 로직 부르기
   await game.playTurn(result);
 
+  // 이동이 끝난 후 도착한 타일 정보 확인
+  const tileInfo = game.getCurrentTileInfo();
+  currentLocName.value = tileInfo.name;
+
+  if (tileInfo.type !== 'corner' && tileInfo.type !== 'chance') {
+    showModal.value = true;
+  }
+
   isRolling.value = false;
 }
 
@@ -88,6 +108,11 @@ async function handleRollClick() {
 function handleZoom(delta: number) {
   if (game) game.changeZoom(delta);
 }
+
+const handleEnterStreetView = () => {
+  console.log('스트리트뷰 페이지로 이동!');
+  showModal.value = false;
+};
 </script>
 
 <style scoped>
