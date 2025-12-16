@@ -12,12 +12,12 @@ export function useDice(): UseDiceReturn {
   const loadDiceAssets = async (): Promise<void> => {
     // manifest 정의
     const manifest = {
-      d1: '../../public/assets/dice/dieWhite_border1.png',
-      d2: '../../public/assets/dice/dieWhite_border2.png',
-      d3: '../../public/assets/dice/dieWhite_border3.png',
-      d4: '../../public/assets/dice/dieWhite_border4.png',
-      d5: '../../public/assets/dice/dieWhite_border5.png',
-      d6: '../../public/assets/dice/dieWhite_border6.png',
+      d1: '/assets/dice/dieWhite_border1.png',
+      d2: '/assets/dice/dieWhite_border2.png',
+      d3: '/assets/dice/dieWhite_border3.png',
+      d4: '/assets/dice/dieWhite_border4.png',
+      d5: '/assets/dice/dieWhite_border5.png',
+      d6: '/assets/dice/dieWhite_border6.png',
     };
 
     try {

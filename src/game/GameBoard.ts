@@ -1,15 +1,9 @@
 // PixiJS 관리
-import { Application, Container, Graphics, Text, TextStyle } from 'pixi.js';
+import { Application, Container, Graphics } from 'pixi.js';
 import gsap from 'gsap';
 import { DiceVisual } from './DiceVisual';
-import type { TileGraphics, BoardRect, DiceTextureArray } from '@/types/game';
-
-interface GameOptions {
-  container: HTMLElement;
-  diceTextures: DiceTextureArray;
-  // 이동했는지 vue로 전달
-  onTileChange?: (index: number) => void;
-}
+import { BoardCard } from './BoardCard';
+import type { BoardRect, GameOptions } from '@/types/game';
 
 export class GameBoard {
   private app: Application;
@@ -17,7 +11,7 @@ export class GameBoard {
   private uiContainer!: Container;
   private background!: Graphics;
   private playerSprite!: Graphics;
-  private tileSprites: TileGraphics[] = [];
+  private tileSprites: BoardCard[] = [];
 
   private diceVisual!: DiceVisual;
 
@@ -80,7 +74,7 @@ export class GameBoard {
 
     // Layer 2: Board
     this.boardContainer = new Container();
-    this.boardContainer.rotation = -Math.PI / 4;
+    this.boardContainer.rotation = (-3 * Math.PI) / 4;
     this.app.stage.addChild(this.boardContainer);
 
     // Layer 3: UI (주사위)
@@ -89,22 +83,42 @@ export class GameBoard {
 
     // Tile 생성
     for (let i = 0; i < this.TOTAL_TILES; i++) {
-      const tile = new Graphics() as TileGraphics;
-      // Tile에 들어가는 text
-      const text = new Text({
-        text: i.toString(),
-        style: new TextStyle({
-          fontSize: 32,
-          fill: '#000000',
-          fontWeight: 'bold',
-          align: 'center',
-        }),
+      // 카드 타입 및 데이터 결정
+      let type: 'basic' | 'corner' | 'chance' | 'festival' = 'basic';
+      // TODO: api 연결 필요
+      let name = i % 5 === 0 ? `Festival` : `Landmark ${i}`;
+      const price = i * 100;
+      const color = this.getGroupColor(i);
+
+      // Corner (0, 10, 20, 30)
+      if (i % (this.TILES_PER_SIDE + 1) === 0) {
+        type = 'corner';
+        // TODO: corner에 뭐 넣을지 고민..
+        name = i === 0 ? 'START' : 'CORNER';
+      }
+      // Chance (4, 17, 23, 34)
+      else if (i === 4 || i === 17 || i === 23 || i === 34) {
+        type = 'chance';
+      }
+      // Festival (5, 15, 25, 35)
+      else if (i === 5 || i === 15 || i === 25 || i === 35) {
+        type = 'festival';
+      }
+
+      // BoardCard 생성
+      const card = new BoardCard({
+        width: 1, // 임의 값 (밑에 drawBoardOnce에서 바뀜)
+        height: 1,
+        index: i,
+        type: type,
+        // 타입에 따라 선택적으로 전달
+        name: type === 'basic' || type === 'corner' || type === 'festival' ? name : undefined,
+        price: type === 'basic' || type === 'festival' ? price : undefined,
+        color: type === 'basic' ? color : undefined,
       });
-      text.anchor.set(0.5);
-      tile.textNode = text;
-      tile.addChild(text);
-      this.boardContainer.addChild(tile);
-      this.tileSprites.push(tile);
+
+      this.boardContainer.addChild(card);
+      this.tileSprites.push(card);
     }
 
     // Player 생성
@@ -123,41 +137,49 @@ export class GameBoard {
     const boardSizePx = totalUnits * this.BASE_UNIT_PX;
     const offset = -boardSizePx / 2;
 
-    this.tileSprites.forEach((tile, index) => {
+    this.tileSprites.forEach((card, index) => {
+      // 카드가 놓일 위치와 크기 계산
       const rect = this.getRectForIndex(index, totalUnits);
-      const pxX = offset + rect.x * this.BASE_UNIT_PX;
-      const pxY = offset + rect.y * this.BASE_UNIT_PX;
-      const pxW = rect.w * this.BASE_UNIT_PX;
-      const pxH = rect.h * this.BASE_UNIT_PX;
+      const slotX = offset + rect.x * this.BASE_UNIT_PX;
+      const slotY = offset + rect.y * this.BASE_UNIT_PX;
+      const slotW = rect.w * this.BASE_UNIT_PX;
+      const slotH = rect.h * this.BASE_UNIT_PX;
 
-      tile.x = pxX;
-      tile.y = pxY;
-      tile.clear();
-
+      // 실제 카드의 크기 결정 (코너면 1x1 아니면 2x3)
       const isCorner = index % (this.TILES_PER_SIDE + 1) === 0;
-      tile.rect(0, 0, pxW, pxH);
-      if (isCorner) {
-        tile.fill(0xffcccc);
-        tile.stroke({ width: 3, color: 0xff0000 });
-      } else {
-        tile.fill(0xffffff);
-        tile.stroke({ width: 2, color: 0x333333 });
-      }
+      const cardW = isCorner ? slotW : this.UNIT_W * this.BASE_UNIT_PX;
+      const cardH = isCorner ? slotH : this.UNIT_H * this.BASE_UNIT_PX;
 
-      if (tile.textNode) {
-        tile.textNode.x = pxW / 2;
-        tile.textNode.y = pxH / 2;
-        tile.textNode.rotation = Math.PI / 4;
-        tile.textNode.style.fontSize = this.BASE_UNIT_PX * 0.8;
+      card.update({ width: cardW, height: cardH });
+
+      // 위치 설정 (슬롯의 정중앙에 배치)
+      card.x = slotX + slotW / 2;
+      card.y = slotY + slotH / 2;
+
+      // 회전축을 카드의 정중앙으로 설정
+      card.pivot.set(cardW / 2, cardH / 2);
+
+      // 카드가 중앙을 바라보게 회전
+      if (!isCorner) {
+        if (index > 0 && index < 10) {
+          card.rotation = Math.PI;
+        } else if (index > 10 && index < 20) {
+          card.rotation = -Math.PI / 2;
+        } else if (index > 20 && index < 30) {
+          card.rotation = 0;
+        } else if (index > 30 && index < 40) {
+          card.rotation = Math.PI / 2;
+        }
+      } else {
+        card.rotation = Math.PI / 2;
       }
     });
 
     // Player 최초 위치 설정
     const startTile = this.tileSprites[0];
-    const rect = this.getRectForIndex(0, totalUnits);
     if (this.playerSprite && startTile) {
-      this.playerSprite.x = startTile.x + (rect.w * this.BASE_UNIT_PX) / 2;
-      this.playerSprite.y = startTile.y + (rect.h * this.BASE_UNIT_PX) / 2;
+      this.playerSprite.x = startTile.x;
+      this.playerSprite.y = startTile.y;
     }
   }
 
@@ -170,6 +192,17 @@ export class GameBoard {
     this.boardContainer.scale.set(this.currentZoom);
     this.boardContainer.pivot.x = this.playerSprite.x;
     this.boardContainer.pivot.y = this.playerSprite.y;
+  }
+
+  /**
+   * 색상 지정
+   */
+  // TODO: 도시별 색상 지정해서 할당 필요 (백엔드에서 처리하고 색상만 주는 게 나을 듯?)
+  private getGroupColor(index: number): number {
+    if (index < 10) return 0xff0000;
+    if (index < 20) return 0x00ff00;
+    if (index < 30) return 0x0000ff;
+    return 0xffff00;
   }
 
   /**
@@ -209,24 +242,17 @@ export class GameBoard {
    */
   private async movePlayer(steps: number) {
     if (!this.playerSprite) return;
-    const totalUnits = this.UNIT_H * 2 + this.TILES_PER_SIDE * this.UNIT_W;
 
     for (let i = 0; i < steps; i++) {
       this.currentTileIndex = (this.currentTileIndex + 1) % this.TOTAL_TILES;
-
-      // Sync with Vue
       if (this.onTileChange) this.onTileChange(this.currentTileIndex);
 
       const targetTile = this.tileSprites[this.currentTileIndex];
       if (!targetTile) continue;
 
-      const rect = this.getRectForIndex(this.currentTileIndex, totalUnits);
-      const centerX = targetTile.x + (rect.w * this.BASE_UNIT_PX) / 2;
-      const centerY = targetTile.y + (rect.h * this.BASE_UNIT_PX) / 2;
-
       await gsap.to(this.playerSprite, {
-        x: centerX,
-        y: centerY,
+        x: targetTile.x, // 타일의 x 좌표 (이미 중심점)
+        y: targetTile.y, // 타일의 y 좌표 (이미 중심점)
         duration: 0.3,
         ease: 'power1.out',
       });

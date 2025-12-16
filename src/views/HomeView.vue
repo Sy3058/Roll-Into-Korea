@@ -19,22 +19,22 @@ const startGame = () => {
       <div class="scene">
         <div class="cube" @click="startGame">
           <div class="face front">
-            <img src="../../public/assets/dice/dieWhite_border1.png" alt="1" />
+            <img src="/assets/dice/dieWhite_border1.png" alt="1" />
           </div>
           <div class="face back">
-            <img src="../../public/assets/dice/dieWhite_border6.png" alt="6" />
+            <img src="/assets/dice/dieWhite_border6.png" alt="6" />
           </div>
           <div class="face right">
-            <img src="../../public/assets/dice/dieWhite_border3.png" alt="3" />
+            <img src="/assets/dice/dieWhite_border3.png" alt="3" />
           </div>
           <div class="face left">
-            <img src="../../public/assets/dice/dieWhite_border4.png" alt="4" />
+            <img src="/assets/dice/dieWhite_border4.png" alt="4" />
           </div>
           <div class="face top">
-            <img src="../../public/assets/dice/dieWhite_border5.png" alt="5" />
+            <img src="/assets/dice/dieWhite_border5.png" alt="5" />
           </div>
           <div class="face bottom">
-            <img src="../../public/assets/dice/dieWhite_border2.png" alt="2" />
+            <img src="/assets/dice/dieWhite_border2.png" alt="2" />
           </div>
         </div>
       </div>
