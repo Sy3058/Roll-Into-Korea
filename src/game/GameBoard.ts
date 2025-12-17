@@ -253,7 +253,7 @@ export class GameBoard {
    */
   private updateCamera() {
     if (!this.playerSprite || !this.boardContainer) return;
-    this.boardContainer.position.set(this.app.screen.width / 2, this.app.screen.height / 2);
+    this.boardContainer.position.set(this.app.screen.width / 2, this.app.screen.height * 0.65);
     this.boardContainer.scale.set(this.currentZoom);
     this.boardContainer.pivot.x = this.playerSprite.x;
     this.boardContainer.pivot.y = this.playerSprite.y;

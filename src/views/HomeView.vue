@@ -12,7 +12,7 @@ const startGame = () => {
 <template>
   <div class="home-container">
     <div class="bg-layer">
-      <img src="../assets/images/start.png" alt="Background" class="bg-image" />
+      <img src="/assets/start.png" alt="Background" class="bg-image" />
     </div>
 
     <div class="content-layer">

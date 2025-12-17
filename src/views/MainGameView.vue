@@ -2,26 +2,13 @@
   <div class="game-wrapper">
     <div ref="pixiContainer" class="pixi-container"></div>
 
-    <div class="ui-layer">
-      <div v-if="!diceLoaded" class="loading-overlay">
-        <div class="loading-text">Loading Dice...</div>
-      </div>
+    <button class="journey-btn" @click="handleOpenJourney">
+      <img :src="journeyIcon" alt="Journey Note" />
+    </button>
 
-      <div v-else class="info-panel">
-        <h3>주사위 굴리기 게임</h3>
-        <p>Current Tile: {{ currentTileIndex }}</p>
-
-        <button @click="handleRollClick" :disabled="isRolling" class="roll-btn">
-          {{ isRolling ? 'Rolling...' : 'Roll Dice' }}
-        </button>
-
-        <div class="zoom-controls">
-          <button @click="handleZoom(0.1)">+</button>
-          <span>Zoom</span>
-          <button @click="handleZoom(-0.1)">-</button>
-        </div>
-      </div>
-    </div>
+    <button class="dice-fab" @click="handleRoll" :disabled="isRolling">
+      <img :src="diceIcon" alt="Roll Dice" class="dice-icon" />
+    </button>
 
     <StreetViewModal
       :is-open="showModal"
@@ -34,13 +21,19 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useDice } from '@/composables/useDice';
 import { GameBoard } from '@/game/GameBoard';
 import StreetViewModal from '@/components/ui/StreetViewModal.vue';
+import diceIcon from '@/assets/ui/dice_3D_detailed.png';
+import journeyIcon from '@/assets/ui/journey_note.png';
 
 // 모달 상태 관리
 const showModal = ref(false);
 const currentLocName = ref('');
+
+// 라우터 관리
+const router = useRouter();
 
 // Composable States
 const { isRolling, isLoaded: diceLoaded, diceTextures, loadDiceAssets, generateRoll } = useDice();
@@ -81,7 +74,7 @@ onUnmounted(() => {
 /**
  * 주사위 굴리기 관리
  */
-async function handleRollClick() {
+async function handleRoll() {
   if (isRolling.value || !game) return;
 
   isRolling.value = true;
@@ -113,78 +106,114 @@ const handleEnterStreetView = () => {
   console.log('스트리트뷰 페이지로 이동!');
   showModal.value = false;
 };
+
+const handleOpenJourney = () => {
+  router.push('/journey');
+};
 </script>
 
 <style scoped>
-/* Styles remain exactly the same */
-.game-wrapper {
+.game-container {
+  position: relative;
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  position: relative;
 }
-.pixi-container {
+
+.canvas-wrapper {
   width: 100%;
   height: 100%;
 }
-.ui-layer {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  pointer-events: none;
-}
-.loading-overlay {
-  background: rgba(0, 0, 0, 0.8);
-  padding: 20px;
-  border-radius: 12px;
-  color: white;
-  pointer-events: auto;
-  text-align: center;
-}
-.loading-text {
-  margin-bottom: 10px;
-  font-weight: bold;
-}
-.force-btn {
-  font-size: 0.8rem;
-  padding: 4px 8px;
-  background: #555;
-  color: #ccc;
-  border: 1px solid #777;
-  cursor: pointer;
-}
-.info-panel {
-  background: rgba(255, 255, 255, 0.95);
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-  font-family: sans-serif;
-  pointer-events: auto;
-}
-.roll-btn {
-  background: #333;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
-  font-size: 1.1rem;
-  width: 100%;
-  margin-bottom: 10px;
-}
-.roll-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.zoom-controls {
+
+.dice-fab {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%); /* 정확한 중앙 정렬 */
+
+  width: 12vh;
+  height: 12vh;
+  border-radius: 50%; /* 완전한 원 */
+
+  background-color: #333;
+  border: 4px solid white; /* 테두리로 구분감 주기 */
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3); /* 그림자 효과 */
+
   display: flex;
-  justify-content: space-between;
   align-items: center;
-}
-.zoom-controls button {
-  width: 30px;
-  height: 30px;
+  justify-content: center;
   cursor: pointer;
+  z-index: 100;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 쫀득한 애니메이션 */
+}
+
+/* 마우스 올렸을 때 */
+.dice-fab:hover {
+  transform: translateX(-50%) scale(1.1);
+  background-color: #444;
+  box-shadow: 0 15px 25px rgba(0, 0, 0, 0.4);
+}
+
+/* 클릭했을 때 */
+.dice-fab:active {
+  transform: translateX(-50%) scale(0.95); /* 눌리는 느낌 */
+}
+
+/* 주사위가 굴러가는 중일 때 (비활성화) */
+.dice-fab:disabled {
+  background-color: #666;
+  cursor: not-allowed;
+  opacity: 0.8;
+  transform: translateX(-50%) scale(1);
+}
+
+/* 내부 이미지 아이콘 */
+.dice-icon {
+  width: 60%; /* 버튼 크기의 60% */
+  height: 60%;
+  object-fit: contain;
+  pointer-events: none; /* 이미지가 클릭 이벤트를 방해하지 않도록 */
+}
+
+.journey-btn {
+  position: fixed;
+  top: 10vh;
+  right: 3vw;
+
+  width: 8vh; /* 정사각형 너비 */
+  height: 8vh; /* 정사각형 높이 */
+
+  background-color: white;
+  border: 2px solid #eee; /* 옅은 테두리 */
+  border-radius: 12px; /* 모서리를 살짝 둥글게 (완전 사각형이 좋으면 0px) */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* 살짝 떠있는 그림자 */
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100; /* 캔버스 위에 위치 */
+  transition: all 0.2s ease;
+  padding: 8px; /* 내부 이미지 여백 */
+}
+
+/* 호버 효과 */
+.journey-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  border-color: #ddd;
+}
+
+/* 클릭 효과 */
+.journey-btn:active {
+  transform: translateY(0);
+  background-color: #f9f9f9;
+}
+
+/* 내부 이미지 꽉 차게 */
+.journey-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 </style>
