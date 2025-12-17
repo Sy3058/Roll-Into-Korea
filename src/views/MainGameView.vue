@@ -2,6 +2,11 @@
   <div class="game-wrapper">
     <div ref="pixiContainer" class="pixi-container"></div>
 
+    <div class="money-box">
+      <div class="coin-icon">₩</div>
+      <span class="amount">{{ formattedMoney }}</span>
+    </div>
+
     <button class="journey-btn" @click="handleOpenJourney">
       <img :src="journeyIcon" alt="Journey Note" />
     </button>
@@ -20,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useDice } from '@/composables/useDice';
 import { GameBoard } from '@/game/GameBoard';
@@ -41,6 +46,12 @@ const { isRolling, isLoaded: diceLoaded, diceTextures, loadDiceAssets, generateR
 // Refs
 const pixiContainer = ref<HTMLDivElement | null>(null);
 const currentTileIndex = ref<number>(0);
+// TODO: 백엔드 연결 필요
+const playerMoney = ref(300000);
+
+const formattedMoney = computed(() => {
+  return playerMoney.value.toLocaleString();
+});
 
 // Game Instance
 let game: GameBoard | null = null;
@@ -85,6 +96,11 @@ async function handleRoll() {
 
   // 이동이 끝난 후 도착한 타일 정보 확인
   const tileInfo = game.getCurrentTileInfo();
+
+  // 돈 더하기
+  if (tileInfo.price) {
+    playerMoney.value += tileInfo.price;
+  }
   currentLocName.value = tileInfo.name;
 
   if (tileInfo.type !== 'corner' && tileInfo.type !== 'chance') {
@@ -215,5 +231,61 @@ const handleOpenJourney = () => {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+.money-box {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 100; /* 캔버스 위에 표시 */
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  background-color: rgba(255, 255, 255, 0.95); /* 살짝 투명한 흰색 */
+  padding: 10px 20px 10px 12px; /* 왼쪽 패딩을 조금 줄임 (아이콘 때문) */
+  border-radius: 30px; /* 둥근 캡슐 모양 */
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 2px solid #eee;
+
+  /* 텍스트 스타일 */
+  font-family: 'Arial', sans-serif; /* 혹은 게임 폰트 */
+  font-weight: 800;
+  color: #333;
+  font-size: 1.2rem;
+
+  /* 등장 애니메이션 */
+  animation: slide-down 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* 돈 아이콘 스타일 (원형) */
+.coin-icon {
+  width: 32px;
+  height: 32px;
+  background-color: #ffc107; /* 금색/노란색 */
+  color: white; /* 글자색 */
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1rem;
+  box-shadow: inset 0 -2px 5px rgba(0, 0, 0, 0.2); /* 입체감 */
+  border: 2px solid #fff; /* 아이콘 테두리 */
+}
+
+/* 등장 애니메이션 정의 */
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

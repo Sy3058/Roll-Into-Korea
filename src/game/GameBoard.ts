@@ -12,7 +12,7 @@ import {
 import gsap from 'gsap';
 import { DiceVisual } from './DiceVisual';
 import { BoardCard } from './BoardCard';
-import type { BoardRect, GameOptions, TileInfo } from '@/types/game';
+import type { BoardRect, GameOptions, Particle, TileInfo } from '@/types/game';
 
 export class GameBoard {
   private app: Application;
@@ -249,6 +249,82 @@ export class GameBoard {
   }
 
   /**
+   * 화면 하단에서 돈이 솟아오르는 효과 (UI 효과)
+   */
+  private showMoneyEffect(amount: number = 20): Promise<void> {
+    return new Promise((resolve) => {
+      const particles: Particle[] = [];
+
+      // 화면 중앙 하단 좌표 계산
+      const startX = this.app.screen.width / 2;
+      const startY = this.app.screen.height; // 화면 맨 아래
+
+      for (let i = 0; i < amount; i++) {
+        const coin = new Graphics() as Particle;
+
+        // 그래픽 그리기 (동전)
+        coin.circle(0, 0, 12);
+        coin.fill({ color: 0xffd700 });
+        coin.stroke({ width: 2, color: 0xb8860b });
+
+        // 시작 위치: 화면 하단 중앙
+        coin.x = startX;
+        coin.y = startY;
+
+        // 회전 제거 (0으로 고정)
+        coin.rotation = 0;
+
+        // 위로 쭉 뻗어 올라가기
+        coin.vx = (Math.random() - 0.5) * 6;
+
+        // Y축: 위로 강력하게 발사 (음수가 위쪽)
+        coin.vy = -22 - Math.random() * 7;
+
+        // 중력: 올라갔다가 자연스럽게 떨어지도록
+        coin.gravity = 0.6;
+
+        // 회전 속도 제거 (안 돌게 함)
+        coin.rotationSpeed = 0;
+
+        // 전체 화면에 추가
+        this.app.stage.addChild(coin);
+        particles.push(coin);
+      }
+
+      const animate = () => {
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += p.gravity;
+
+          // 회전 로직 제거됨 (p.rotation += ...)
+
+          // 투명도 조절 (천천히 사라짐)
+          p.alpha -= 0.005;
+
+          if (p.alpha <= 0) {
+            // 부모(app.stage)에서 제거
+            if (p.parent) {
+              p.parent.removeChild(p);
+            }
+            particles.splice(i, 1);
+          }
+        }
+
+        if (particles.length > 0) {
+          requestAnimationFrame(animate);
+        } else {
+          resolve();
+        }
+      };
+
+      requestAnimationFrame(animate);
+    });
+  }
+
+  /**
    * 카메라 위치 이동
    */
   private updateCamera() {
@@ -298,6 +374,12 @@ export class GameBoard {
 
     // Player 이동
     await this.movePlayer(result);
+
+    const currentTile = this.getCurrentTileInfo();
+
+    if (currentTile.type === 'basic' || currentTile.type === 'festival') {
+      await this.showMoneyEffect();
+    }
   }
 
   /**
@@ -332,6 +414,7 @@ export class GameBoard {
       index,
       name: card?.getName(),
       type: card?.getType(),
+      price: card?.getPrice(),
     };
   }
 

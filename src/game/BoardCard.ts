@@ -200,7 +200,7 @@ export class BoardCard extends Container {
    * 외부에서 이름을 조회할 수 있는 Getter
    */
   public getName(): string {
-    return (this.options.name || '') as string;
+    return this.options.name || '';
   }
 
   /**
@@ -208,5 +208,12 @@ export class BoardCard extends Container {
    */
   public getType(): CardType {
     return this.options.type || 'basic';
+  }
+
+  /**
+   * 외부에서 가격을 조회할 수 있는 Getter
+   */
+  public getPrice(): number {
+    return this.options.price || 0;
   }
 }

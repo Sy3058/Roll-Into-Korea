@@ -50,8 +50,9 @@ export type TileData = {
 
 export interface TileInfo {
   index: number;
-  name: string;
-  type: CardType;
+  name?: string;
+  type?: CardType;
+  price?: number;
 }
 
 // =================== Player ===================
@@ -68,6 +69,14 @@ export type GameState = {
   currentTurnPlayerId: string;
   isGameActive: boolean;
 };
+
+export interface Particle extends Graphics {
+  vx: number; // x축 속도
+  vy: number; // y축 속도
+  gravity: number; // 중력
+  rotationSpeed: number; // 회전 속도
+  life?: number; // (선택) 수명
+}
 
 // Composable 반환 타입
 export interface UseDiceReturn {
