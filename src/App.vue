@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
+import { RouterView } from 'vue-router';
 </script>
 
 <template>
@@ -19,7 +19,6 @@ body {
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden; /* 불필요한 스크롤 방지 */
 }
 
 #app {
