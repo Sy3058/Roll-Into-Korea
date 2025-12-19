@@ -6,8 +6,8 @@
       </div>
 
       <nav class="nav-links">
-        <a href="#hero">ABOUT</a>
-        <a href="#about">LOGIN</a>
+        <a href="#about">ABOUT</a>
+        <a href="#login">LOGIN</a>
       </nav>
     </div>
   </header>
