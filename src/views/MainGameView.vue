@@ -121,8 +121,8 @@ async function handleRoll() {
 }
 
 const handleEnterStreetView = () => {
-  console.log('스트리트뷰 페이지로 이동!');
   showModal.value = false;
+  router.push('/map');
 };
 
 // journey-btn 핸들러는 이제 UI 패널 내부 요소로 대체되거나 추가 구현 가능
