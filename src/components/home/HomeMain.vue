@@ -13,7 +13,7 @@
             @mouseenter="isDiceHovered = true"
             @mouseleave="isDiceHovered = false"
           >
-            <Dice3D auto-spin :scale="[2, 2, 2]" @click="startGame" :is-hovered="isDiceHovered" />
+            <HeroDice auto-spin :scale="[2, 2, 2]" @click="startGame" :is-hovered="isDiceHovered" />
           </div>
 
           <p class="click-hint">주사위를 굴려 여행을 떠나세요!</p>
@@ -25,7 +25,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
-import Dice3D from '../ui/Dice3D.vue';
+import HeroDice from '@/components/hero/HeroDice.vue';
 import { ref } from 'vue';
 
 const router = useRouter();

@@ -1,7 +1,7 @@
 import { Container, Graphics, Application, TextStyle, Text } from 'pixi.js';
 import { BoardCard } from './BoardCard';
 import { BOARD_CONFIG, getBoardRect, getTileInfo } from './BoardUtils';
-import type { GameOptions, TileInfo } from '@/types/game';
+import type { GameOptions, Particle, TileInfo } from '@/types/game';
 import gsap from 'gsap';
 
 export class GameBoard {
@@ -165,6 +165,12 @@ export class GameBoard {
    */
   public async playTurn(diceResult: number) {
     await this.movePlayer(diceResult);
+
+    const currentTile = this.getCurrentTileInfo();
+
+    if (currentTile.type === 'basic' || currentTile.type === 'festival') {
+      await this.showMoneyEffect();
+    }
   }
 
   /**
@@ -217,6 +223,74 @@ export class GameBoard {
       type: card?.getType(),
       price: card?.getPrice(),
     };
+  }
+
+  /**
+   * 화면 하단에서 돈이 솟아오르는 효과 (UI 효과)
+   */
+  private showMoneyEffect(amount: number = 20): Promise<void> {
+    return new Promise((resolve) => {
+      const particles: Particle[] = [];
+
+      // 화면 중앙 하단 좌표 계산
+      const startX = this.app.screen.width / 2;
+      const startY = this.app.screen.height; // 화면 맨 아래
+
+      for (let i = 0; i < amount; i++) {
+        const coin = new Graphics() as Particle;
+
+        // 그래픽 그리기 (동전)
+        coin.circle(0, 0, 12);
+        coin.fill({ color: 0xffd700 });
+        coin.stroke({ width: 2, color: 0xb8860b });
+
+        // 시작 위치: 화면 하단 중앙
+        coin.x = startX;
+        coin.y = startY;
+
+        // 코인 애니메이션
+        coin.rotation = 0;
+        coin.vx = (Math.random() - 0.5) * 6;
+        coin.vy = -22 - Math.random() * 7;
+        coin.gravity = 0.6;
+        coin.rotationSpeed = 0;
+
+        // 전체 화면에 추가
+        this.app.stage.addChild(coin);
+        particles.push(coin);
+      }
+
+      const animate = () => {
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+
+          if (!p) continue;
+
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += p.gravity;
+
+          // 투명도 조절 (천천히 사라짐)
+          p.alpha -= 0.015;
+
+          if (p.alpha <= 0) {
+            // 부모(app.stage)에서 제거
+            if (p.parent) {
+              p.parent.removeChild(p);
+            }
+            particles.splice(i, 1);
+          }
+        }
+
+        if (particles.length > 0) {
+          requestAnimationFrame(animate);
+        } else {
+          resolve();
+        }
+      };
+
+      requestAnimationFrame(animate);
+    });
   }
 
   /**

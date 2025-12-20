@@ -113,6 +113,10 @@ const handleRollComplete = async (result: number) => {
     const info = game.getCurrentTileInfo();
     console.log('도착:', info.name);
 
+    if (info.price) {
+      playerMoney.value += info.price;
+    }
+
     // 모달 열기
     if (info.type === 'basic' || info.type === 'festival') {
       currentLocName.value = info.name || 'Unknown Location';
