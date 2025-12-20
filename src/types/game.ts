@@ -9,7 +9,6 @@ export interface TileGraphics extends Graphics {
 
 export interface GameOptions {
   container: HTMLElement;
-  diceTextures: DiceTextureArray;
   // 이동했는지 vue로 전달
   onTileChange?: (index: number) => void;
 }

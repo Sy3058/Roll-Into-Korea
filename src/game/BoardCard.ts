@@ -151,9 +151,6 @@ export class BoardCard extends Container {
         fontSize: width * 0.2,
         fontWeight: '900',
         fill: '#FF0000',
-        dropShadow: true,
-        dropShadowColor: '#ffffff',
-        dropShadowDistance: 2,
       }),
     });
     text.anchor.set(0.5);

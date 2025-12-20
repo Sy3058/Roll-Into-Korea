@@ -1,6 +1,6 @@
 <template>
   <div class="main-layout">
-    <div ref="pixiContainer" class="board-section"></div>
+    <div ref="boardContainer" class="board-section"></div>
 
     <aside class="sidebar-section">
       <div class="status-panel">
@@ -15,11 +15,15 @@
 
       <JourneyPanel />
 
+      <RollingDice ref="diceRef" @roll-complete="handleRollComplete" />
+
       <div class="dice-control-area">
-        <button class="btn-3d black" @click="handleRoll" :disabled="isRolling">
+        <button class="btn-3d black" @click="onRollClick" :disabled="isRolling || isMoving">
           <div class="btn-content">
             <img :src="diceIcon" alt="Dice" class="dice-icon-small" />
-            <span class="btn-text">{{ isRolling ? '...' : 'ROLL' }}</span>
+            <span class="btn-text">{{
+              isRolling ? 'ROLLING...' : isMoving ? 'MOVING...' : 'ROLL'
+            }}</span>
           </div>
         </button>
       </div>
@@ -37,12 +41,12 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { useDice } from '@/composables/useDice';
 import { GameBoard } from '@/game/GameBoard';
 import JourneyPanel from '@/components/journey/JourneyPanel.vue';
 import StreetViewModal from '@/components/ui/StreetViewModal.vue';
 import diceIcon from '@/assets/ui/dice_3D_detailed.png';
 import profileImg from '@/assets/images/profile.png';
+import RollingDice from '@/components/ui/RollingDice.vue';
 
 // 모달 상태 관리
 const showModal = ref(false);
@@ -51,12 +55,10 @@ const currentLocName = ref('');
 // 라우터 관리
 const router = useRouter();
 
-// Composable States
-const { isRolling, isLoaded: diceLoaded, diceTextures, loadDiceAssets, generateRoll } = useDice();
-
 // Refs
-const pixiContainer = ref<HTMLDivElement | null>(null);
+const boardContainer = ref<HTMLDivElement | null>(null);
 const currentTileIndex = ref<number>(0);
+const diceRef = ref<InstanceType<typeof RollingDice> | null>(null);
 // TODO: 백엔드 연결 필요
 const playerMoney = ref(300000);
 
@@ -66,29 +68,20 @@ const formattedMoney = computed(() => {
 
 // Game Instance
 let game: GameBoard | null = null;
+const isMoving = ref(false); // 이동 중 버튼 클릭 방지
+const isRolling = ref(false); // 주사위 굴러가는 중 버튼 클릭 방지
 
 // Lifecycle
 onMounted(async () => {
-  if (!pixiContainer.value) return;
-
-  // Assets 불러오기
-  try {
-    await loadDiceAssets();
-  } catch (e) {
-    console.error('Asset loading warning:', e);
-  }
+  if (!boardContainer.value) return;
 
   // Game Engine 초기화
   game = new GameBoard({
-    container: pixiContainer.value,
-    diceTextures: diceTextures.value,
+    container: boardContainer.value,
     onTileChange: (index) => {
       currentTileIndex.value = index;
     },
   });
-
-  // [중요] 레이아웃 변경으로 인해 리사이즈 이벤트를 수동으로 한번 호출하여 보드 위치를 잡음
-  window.dispatchEvent(new Event('resize'));
 });
 
 onUnmounted(() => {
@@ -96,36 +89,46 @@ onUnmounted(() => {
 });
 
 /**
- * 주사위 굴리기 관리
+ * 주사위 굴리기 버튼 관리
  */
-async function handleRoll() {
-  if (isRolling.value || !game) return;
-
-  isRolling.value = true;
-  const result = generateRoll();
-
-  await game.playTurn(result);
-
-  const tileInfo = game.getCurrentTileInfo();
-
-  if (tileInfo.price) {
-    playerMoney.value += tileInfo.price;
+const onRollClick = () => {
+  if (diceRef.value && !isRolling.value && !isMoving.value) {
+    isRolling.value = true;
+    diceRef.value.roll();
   }
-  currentLocName.value = tileInfo.name;
+};
 
-  if (tileInfo.type !== 'corner' && tileInfo.type !== 'chance') {
-    showModal.value = true;
-  }
-
+// 주사위 결과 수신 및 이동 명령
+const handleRollComplete = async (result: number) => {
+  console.log('주사위 결과:', result);
   isRolling.value = false;
-}
+
+  if (game) {
+    isMoving.value = true;
+
+    // 플레이어 이동 대기
+    await game.playTurn(result);
+
+    // 이동 완료 후 도착한 타일 정보 확인
+    const info = game.getCurrentTileInfo();
+    console.log('도착:', info.name);
+
+    // 모달 열기
+    if (info.type === 'basic' || info.type === 'festival') {
+      currentLocName.value = info.name || 'Unknown Location';
+      setTimeout(() => {
+        showModal.value = true;
+      }, 300);
+    }
+
+    isMoving.value = false;
+  }
+};
 
 const handleEnterStreetView = () => {
   showModal.value = false;
   router.push('/map');
 };
-
-// journey-btn 핸들러는 이제 UI 패널 내부 요소로 대체되거나 추가 구현 가능
 </script>
 
 <style scoped>
