@@ -5,7 +5,6 @@
       <div class="modal-card">
         <div class="modal-header">
           <slot name="header"></slot>
-          <BaseButton variant="secondary" @click="emit('close')">✕</BaseButton>
         </div>
 
         <div class="modal-body">
@@ -21,8 +20,6 @@
 </template>
 
 <script setup lang="ts">
-import BaseButton from './BaseButton.vue';
-
 defineProps<{
   isOpen: boolean;
 }>();

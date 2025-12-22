@@ -3,13 +3,13 @@
     <div class="journey-header">
       <h3>여행 노트</h3>
       <p>여행을 통해 뱃지를 모아보세요.</p>
+      <button class="more-btn" @click="handleMoreClick">더보기 ></button>
     </div>
 
     <div class="journey-list">
       <div class="list-item" v-for="category in collections" :key="category.id">
         <div class="item-header">
           <span class="category-name">{{ category.label }}</span>
-          <button class="more-btn" @click="handleMoreClick">더보기 ></button>
         </div>
 
         <div class="badge-row">
@@ -106,6 +106,10 @@ const collections = ref<BadgeCategory[]>([
 }
 
 /* 헤더 스타일 */
+.journey-header {
+  position: relative;
+  margin-bottom: 10px;
+}
 .journey-header h3 {
   margin: 0 0 4px 0;
   font-size: 1.1rem;
@@ -116,6 +120,21 @@ const collections = ref<BadgeCategory[]>([
   margin: 0;
   font-size: 0.8rem;
   color: #777;
+}
+
+.more-btn {
+  /* Positioning Logic */
+  position: absolute;
+  top: 0; /* Aligns with the top of the header (Title) */
+  right: 0; /* Aligns to the far right */
+
+  /* Visual Styles */
+  background: none;
+  border: none;
+  font-size: 0.8rem; /* 0.8rem matches the <p> tag size nicely */
+  color: #999;
+  cursor: pointer;
+  padding: 0; /* Remove default padding for better alignment */
 }
 
 .journey-list {
@@ -135,14 +154,6 @@ const collections = ref<BadgeCategory[]>([
   font-size: 0.95rem;
   font-weight: 700;
   color: #444;
-}
-
-.more-btn {
-  background: none;
-  border: none;
-  font-size: 0.8rem;
-  color: #999;
-  cursor: pointer;
 }
 
 .badge-row {

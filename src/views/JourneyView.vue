@@ -8,6 +8,7 @@
 
     <main class="content-container">
       <section class="left-section">
+        <ProfilePanel />
         <JourneyBagPanel />
       </section>
 
@@ -22,6 +23,7 @@
 import { useRouter } from 'vue-router';
 import JourneyBagPanel from '@/components/journey/JourneyBagPanel.vue';
 import JourneyNotePanel from '@/components/journey/JourneyNotePanel.vue';
+import ProfilePanel from '@/components/journey/ProfilePanel.vue';
 
 const router = useRouter();
 </script>
@@ -29,7 +31,7 @@ const router = useRouter();
 <style scoped>
 .journey-page {
   min-height: 100vh;
-  background-color: #f0f2f5;
+  background-color: #f8f4e8;
   padding: 20px 40px;
   display: flex;
   flex-direction: column;

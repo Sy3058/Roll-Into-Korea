@@ -4,8 +4,8 @@
 
     <aside class="sidebar-section">
       <div class="status-panel">
-        <div class="profile-placeholder">
-          <img :src="profileImg" alt="Profile" class="profile-img" />
+        <div class="profile-wrapper">
+          <img :src="profileImg" @click="goToJourney" alt="Profile" class="profile-img" />
         </div>
         <div class="money-info">
           <div class="coin-icon">₩</div>
@@ -88,6 +88,10 @@ onUnmounted(() => {
   if (game) game.destroy();
 });
 
+const goToJourney = () => {
+  router.push('/journey');
+}
+
 /**
  * 주사위 굴리기 버튼 관리
  */
@@ -98,7 +102,10 @@ const onRollClick = () => {
   }
 };
 
-// 주사위 결과 수신 및 이동 명령
+/**
+ * 주사위 결과 수신 및 이동 로직
+ * @param result 
+ */
 const handleRollComplete = async (result: number) => {
   console.log('주사위 결과:', result);
   isRolling.value = false;
@@ -129,6 +136,9 @@ const handleRollComplete = async (result: number) => {
   }
 };
 
+/**
+ * 거리뷰 열기
+ */
 const handleEnterStreetView = () => {
   showModal.value = false;
   router.push('/map');
@@ -155,8 +165,8 @@ const handleEnterStreetView = () => {
 
 /* 오른쪽: 사이드바 */
 .sidebar-section {
-  width: 380px; /* 고정 너비 (필요시 %로 변경 가능) */
-  background-color: #c5d89d; /* 이미지의 배경색 느낌 */
+  width: 380px;
+  background-color: #c5d89d;
   display: flex;
   flex-direction: column;
   border-left: 1px solid #ccc;
@@ -166,31 +176,33 @@ const handleEnterStreetView = () => {
 
 /* 1. 상단 패널 (돈, 프로필) */
 .status-panel {
-  height: 250px; /* 이미지의 상단 회색 박스 높이 */
-  background-color: #c5d89d; /* 약간 더 짙은 회색 or 이미지 그대로라면 비워둠 */
+  height: 250px;
+  background-color: #c5d89d;
   padding: 24px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end; /* 아래쪽에 돈 표시 */
+  justify-content: flex-end;
   border-bottom: 2px solid #fff; /* 구분선 */
 }
 
 /* 프로필 들어갈 자리 */
-.profile-placeholder {
+.profile-wrapper {
   flex: 1;
-  display: flex; /* Center the image */
+  display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 10px; /* Add some space between profile and money */
+  margin-bottom: 10px;
 }
 
 .profile-img {
-  width: 7vw; /* Adjust size as needed */
-  height: 7vw; /* Adjust size as needed */
-  border-radius: 50%; /* Make it circular */
-  object-fit: cover; /* Ensure image covers the area without distortion */
-  border: 3px solid #fff; /* Optional: white border */
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Optional: shadow */
+  width: 7vw;
+  height: 7vw;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
 .money-info {

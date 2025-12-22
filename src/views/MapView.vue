@@ -15,7 +15,7 @@
       <template #body>
         <p style="margin: 0; font-size: 1.1rem; color: #333">정말로 여행을 끝내시겠습니까?</p>
         <p style="margin: 8px 0 0 0; font-size: 0.9rem; color: #888">
-          (저장되지 않은 기록은 사라질 수 있습니다)
+          (여행을 끝내면 다시 돌아올 수 없습니다)
         </p>
       </template>
 
