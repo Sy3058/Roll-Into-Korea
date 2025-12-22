@@ -11,7 +11,7 @@ export class GameBoard {
   private playerSprite!: Graphics;
   private tileSprites: BoardCard[] = [];
 
-  // 상태 과녈ㄴ 변수
+  // 상태 관련 변수
   private currentTileIndex = 0;
   private boardSizePx = 0;
   private onTileChange?: (index: number) => void;
@@ -118,12 +118,18 @@ export class GameBoard {
    */
   private drawBackground(size: number) {
     const halfSize = size / 2;
+    const shadowOffset = -12;
+
+    const shadow = new Graphics()
+      .rect(-halfSize + shadowOffset, -halfSize + shadowOffset, size, size)
+      .fill({ color: 0x000000, alpha: 0.2 });
+    this.boardContainer.addChild(shadow);
 
     // 외곽 프레임
     const bg = new Graphics()
       .rect(-halfSize, -halfSize, size, size)
       .fill(0xffffff)
-      .stroke({ width: 4, color: 0x000000 });
+      .stroke({ width: 6, color: 0x1a1a1a });
     this.boardContainer.addChild(bg);
 
     // 중앙 로고

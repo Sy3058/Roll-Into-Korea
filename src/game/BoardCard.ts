@@ -1,6 +1,11 @@
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 import type { BoardCardOptions, CardType } from '@/types/game';
 
+const STYLE = {
+  BORDER_COLOR: 0x1a1a1a,
+  BORDER_WIDTH: 3,
+};
+
 //TODO: (5, 15, 25, 35)에는 축제 카드 배치, 코너에 뭐 넣을지 결정
 export class BoardCard extends Container {
   private options: BoardCardOptions;
@@ -54,15 +59,18 @@ export class BoardCard extends Container {
     const { width, height, color, name, price } = this.options;
     const headerHeight = height * 0.25; // 상단 25%를 색상으로 지정
 
-    // 하얀색 배경
-    this.background.rect(0, 0, width, height).fill(0xffffff).stroke({ width: 2, color: 0x000000 });
+    // 하얀 배경
+    this.background
+      .rect(0, 0, width, height)
+      .fill(0xffffff)
+      .stroke({ width: STYLE.BORDER_WIDTH, color: STYLE.BORDER_COLOR });
 
     // 상단의 도시 색상
     if (color) {
       this.background
         .rect(0, 0, width, headerHeight)
         .fill(color)
-        .stroke({ width: 2, color: 0x000000 });
+        .stroke({ width: STYLE.BORDER_WIDTH, color: STYLE.BORDER_COLOR });
     }
 
     // 관광지 이름
@@ -103,7 +111,10 @@ export class BoardCard extends Container {
     const { width, height, name, price } = this.options;
 
     // 연노랑 배경
-    this.background.rect(0, 0, width, height).fill(0xffffcc).stroke({ width: 2, color: 0x000000 });
+    this.background
+      .rect(0, 0, width, height)
+      .fill(0xffffcc)
+      .stroke({ width: STYLE.BORDER_WIDTH, color: STYLE.BORDER_COLOR });
 
     // 축제 이름
     if (name) {
@@ -142,8 +153,10 @@ export class BoardCard extends Container {
   private drawCorner() {
     const { width, height, name } = this.options;
 
-    // Full background color (Light Red/Pink for corners)
-    this.background.rect(0, 0, width, height).fill(0xffe4e1).stroke({ width: 3, color: 0xff0000 });
+    this.background
+      .rect(0, 0, width, height)
+      .fill(0xffe4e1)
+      .stroke({ width: STYLE.BORDER_WIDTH, color: STYLE.BORDER_COLOR });
 
     const text = new Text({
       text: name || 'START',
@@ -156,7 +169,7 @@ export class BoardCard extends Container {
     text.anchor.set(0.5);
     text.x = width / 2;
     text.y = height / 2;
-    // text.rotation = -Math.PI / 4; // Optional: Rotate text for style
+    text.rotation = -Math.PI / 4; // Optional: Rotate text for style
     this.contentContainer.addChild(text);
   }
 
@@ -165,7 +178,10 @@ export class BoardCard extends Container {
     const { width, height } = this.options;
 
     // 하늘색으로 배경 설정
-    this.background.rect(0, 0, width, height).fill(0xe0ffff).stroke({ width: 2, color: 0x008080 });
+    this.background
+      .rect(0, 0, width, height)
+      .fill(0xe0ffff)
+      .stroke({ width: STYLE.BORDER_WIDTH, color: STYLE.BORDER_COLOR });
 
     // "?" 마크 (Icon으로 대체할수도?)
     const qMark = new Text({
