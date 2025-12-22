@@ -50,14 +50,17 @@ const onProfileUpdate = (newData: { name: string; img: string }) => {
   position: relative;
   background-color: white;
   border-radius: 20px;
-  padding: 30px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  height: 19%;
+  height: 25%;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  gap: 15px;
   text-align: center;
-  margin-bottom: 3%;
+  padding-top: 20px;
+  margin-bottom: 5%;
 }
 
 .edit-btn {
@@ -80,7 +83,9 @@ const onProfileUpdate = (newData: { name: string; img: string }) => {
 }
 
 .img-wrapper {
-  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .profile-img {
   width: 7vw;
@@ -91,12 +96,11 @@ const onProfileUpdate = (newData: { name: string; img: string }) => {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 .info-text {
-  margin-bottom: 30px;
+  width: 100%;
 }
 .profile-title {
   font-size: 1.4rem;
   font-weight: 800;
   color: #333;
-  margin-bottom: 12px;
 }
 </style>

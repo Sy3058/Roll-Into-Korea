@@ -74,7 +74,7 @@ const currentBagImage = computed(() => {
   border-radius: 20px;
   padding: 30px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  height: 60%;
+  height: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;

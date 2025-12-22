@@ -1,7 +1,7 @@
 <!-- 기본 모달 -->
 <template>
   <Transition name="fade">
-    <div v-if="isOpen" class="modal-overlay" @click.self="emit('close')">
+    <div v-if="isOpen" class="modal-overlay">
       <div class="modal-card">
         <div class="modal-header">
           <slot name="header"></slot>
@@ -24,9 +24,9 @@ defineProps<{
   isOpen: boolean;
 }>();
 
-const emit = defineEmits<{
-  (e: 'close'): void;
-}>();
+// const emit = defineEmits<{
+//   (e: 'close'): void;
+// }>();
 </script>
 
 <style scoped>

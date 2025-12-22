@@ -14,7 +14,7 @@ export const BOARD_CONFIG = {
  */
 export function getTileInfo(index: number) {
   let type: 'basic' | 'corner' | 'chance' | 'festival' = 'basic';
-  let name = index % 5 === 0 ? `Festival` : `Landmark ${index}`;
+  let name = index % 5 === 0 ? `Festival` : `경복궁`;
   const price = index * 100;
   let color = undefined;
 
