@@ -1,10 +1,8 @@
 <template>
   <div class="bag-panel">
     <!-- 가방 이미지 -->
-    <div class="img-placeholder-wrapper">
-      <div class="img-placeholder">
-        <span style="color: #999">Bag Image</span>
-      </div>
+    <div class="img-wrapper">
+      <img :src="currentBagImage" :alt="bagInfo.name" class="bag-img" />
     </div>
 
     <div class="info-text">
@@ -35,7 +33,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+
+const bagImageMap: Record<number, string> = {
+  1: 'plastic_bag',
+  2: 'paper_bag',
+  3: 'canvas_bag',
+  4: 'leather_bag',
+  5: 'travel_bag',
+  6: 'backpack',
+  7: 'suitcase_s',
+  8: 'suitcase_m',
+  9: 'suitcase_l',
+  10: 'luxury_trunk',
+};
 
 // 더미 데이터
 const bagInfo = ref({
@@ -48,6 +59,12 @@ const bagInfo = ref({
     { label: '내구성', current: 5, max: 100, color: '#8d6e63' }, // 갈색톤
     { label: '수납력', current: 5, max: 100, color: '#5c6bc0' }, // 파란톤
   ],
+});
+
+const currentBagImage = computed(() => {
+  const fileName = bagImageMap[bagInfo.value.lv] || 'plastic_bag';
+
+  return new URL(`/src/assets/bag/${fileName}.png`, import.meta.url).href;
 });
 </script>
 
@@ -64,19 +81,22 @@ const bagInfo = ref({
   text-align: center;
 }
 
-/* 이미지 Placeholder 스타일 */
-.img-placeholder-wrapper {
-  margin-bottom: 24px;
-}
-.img-placeholder {
-  width: 180px;
-  height: 180px;
-  background-color: #d1d1d1;
-  border-radius: 12px;
+/* 이미지 스타일 */
+.img-wrapper {
+  margin-bottom: 10px;
+  width: 8vw;
+  height: 8vw;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.bag-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+  transition: transform 0.3s ease;
 }
 
 /* 텍스트 정보 스타일 */

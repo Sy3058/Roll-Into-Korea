@@ -21,7 +21,7 @@
 
     <template #footer>
       <BaseButton variant="secondary" @click="emit('close')">취소</BaseButton>
-      <BaseButton variant="primary" @click="handleSave"> 여행 떠나기 </BaseButton>
+      <BaseButton variant="primary" @click="handleSave"> 수정하기 </BaseButton>
     </template>
   </BaseModal>
 </template>
