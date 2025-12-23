@@ -7,6 +7,14 @@
       여행 끝내기
     </BaseButton>
 
+    <LocationModal
+      :is-open="isLocationModalOpen"
+      :location-data="selectedQuest"
+      :user-money="userMoney"
+      @close="closeLocationModal"
+      @buy-item="handleBuyItem"
+    />
+
     <BaseModal :isOpen="isFinishModalOpen" @close="isFinishModalOpen = false">
       <template #header>
         <h3 style="margin: 0; font-weight: bold">여행 종료</h3>
@@ -34,36 +42,144 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useKakaoMap } from '@/composables/useKakaoMap';
+import type { QuestData, ShopItem } from '@/types/quest';
+
+// Composables
+import { useKakaoLoader } from '@/composables/map/useKakaoLoader';
+import { useGeofencing } from '@/composables/map/useGeofencing';
+import { useMapWalker } from '@/composables/map/useMapWalker';
+import { useQuestSystem } from '@/composables/map/useQuestSystem';
+
+// Components
 import BaseButton from '@/components/common/BaseButton.vue';
 import BaseModal from '@/components/common/BaseModal.vue';
+import LocationModal from '@/components/map/LocationModal.vue';
 
 const mapRef = ref<HTMLElement | null>(null);
 const rvRef = ref<HTMLElement | null>(null);
 const router = useRouter();
+
+// UI States
 const isFinishModalOpen = ref(false);
+const isLocationModalOpen = ref(false);
+const isWarningVisible = ref(false);
+const warningMsg = ref('');
 
-const { initialize, isWarningVisible, warningMsg } = useKakaoMap();
+// Data
+const userMoney = ref(50000);
+const selectedQuest = ref<QuestData | null>(null);
 
-// 여행 끝내기
+// Helper
+let warningTimeout: number | undefined = undefined;
+const showToast = (msg: string) => {
+  warningMsg.value = msg;
+  isWarningVisible.value = true;
+  if (warningTimeout) clearTimeout(warningTimeout);
+  warningTimeout = setTimeout(() => (isWarningVisible.value = false), 2000);
+};
+
+// --- Logic ---
+const { loadScript } = useKakaoLoader();
+const { getBoundaryPath, isPointInPolygon } = useGeofencing();
+const { createWalker, updateWalkerPosition, updateWalkerRotation } = useMapWalker();
+
+// Pass click handler to QuestSystem
+const { initQuests, updateQuestVisibility } = useQuestSystem((quest) => {
+  selectedQuest.value = quest;
+  isLocationModalOpen.value = true;
+});
+
+const handleBuyItem = (item: ShopItem) => {
+  if (userMoney.value >= item.price) {
+    userMoney.value -= item.price;
+    showToast(`💳 ${item.name} 구매 완료!`);
+  } else {
+    showToast('💸 잔액이 부족합니다!');
+  }
+};
+
 const confirmFinish = () => {
   isFinishModalOpen.value = false;
   router.push('/game');
 };
+const closeLocationModal = () => {
+  isLocationModalOpen.value = false;
+  selectedQuest.value = null;
+};
 
-onMounted(() => {
-  if (mapRef.value && rvRef.value) initialize(mapRef.value, rvRef.value);
+onMounted(async () => {
+  if (!mapRef.value || !rvRef.value) return;
+
+  try {
+    await loadScript();
+    window.kakao.maps.load(() => {
+      const kakao = window.kakao.maps;
+
+      // Start Point
+      const startPosition = new kakao.LatLng(37.578611, 126.977222);
+
+      // Initialize
+      const map = new kakao.Map(mapRef.value!, { center: startPosition, level: 4 });
+      const roadview = new kakao.Roadview(rvRef.value!);
+      const rvClient = new kakao.RoadviewClient();
+
+      // Boundary
+      const boundaryPath = getBoundaryPath();
+      new kakao.Polygon({
+        map: map,
+        path: boundaryPath,
+        strokeWeight: 2,
+        strokeColor: '#FF0000',
+        fillColor: '#FF0000',
+        fillOpacity: 0.15,
+      });
+
+      // Walker
+      const walker = createWalker(startPosition);
+      walker!.setMap(map);
+
+      // Events
+      let lastValidPanoId: number | null = null;
+
+      kakao.event.addListener(roadview, 'position_changed', () => {
+        const newPos = roadview.getPosition();
+        const currentPanoId = roadview.getPanoId();
+
+        if (isPointInPolygon(newPos, boundaryPath)) {
+          lastValidPanoId = currentPanoId;
+          map.setCenter(newPos);
+          updateWalkerPosition(newPos);
+          updateQuestVisibility(roadview);
+        } else {
+          showToast('지정된 구역을 벗어날 수 없습니다.');
+          if (lastValidPanoId) {
+            roadview.setPanoId(lastValidPanoId, roadview.getPosition());
+          }
+        }
+      });
+
+      kakao.event.addListener(roadview, 'viewpoint_changed', () => {
+        updateWalkerRotation(roadview.getViewpoint().pan);
+      });
+
+      // Initial Load
+      rvClient.getNearestPanoId(startPosition, 50, (panoId: number | null) => {
+        if (panoId) {
+          roadview.setPanoId(panoId, startPosition);
+          lastValidPanoId = panoId;
+
+          initQuests(); // Initialize dummy quests
+          updateQuestVisibility(roadview);
+        }
+      });
+    });
+  } catch (e) {
+    console.error(e);
+  }
 });
 </script>
 
 <style>
-/* --- 전역 스타일 (scoped 안에 있으면 안 됨) --- */
-/* 우측 하단 줌/나침반 컨트롤 숨기기 */
-div[id^='_box_util_'] {
-  display: none !important;
-}
-
-/* MapWalker */
 .MapWalker {
   width: 0;
   height: 0;
@@ -95,51 +211,8 @@ div[id^='_box_util_'] {
   z-index: 1;
 }
 
-/* QuestMark */
-.QuestMark {
-  position: absolute;
-  cursor: pointer;
-  animation: float 1.5s infinite ease-in-out;
-  transform: translateY(-200px);
-}
-.QuestMark .icon-bg {
-  width: 30px;
-  height: 30px;
-  background-color: #ffd700;
-  border: 2px solid #fff;
-  border-radius: 50% 50% 0 50%;
-  transform: rotate(45deg);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.QuestMark .icon-text {
-  font-size: 18px;
-  font-weight: 900;
-  color: #d32f2f;
-  transform: rotate(-45deg);
-  margin-left: 2px;
-  margin-bottom: 2px;
-}
-.QuestMark .quest-name {
-  margin-top: 5px;
-  background-color: rgba(0, 0, 0, 0.7);
-  color: #fff;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  text-align: center;
-  white-space: nowrap;
-}
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(-200px);
-  }
-  50% {
-    transform: translateY(-215px);
-  }
+div[id^='_box_util_'] {
+  display: none !important;
 }
 </style>
 
@@ -148,6 +221,7 @@ div[id^='_box_util_'] {
   position: relative;
   width: 100%;
   height: 100vh;
+  overflow: hidden;
 }
 #roadview {
   position: absolute;
@@ -165,32 +239,31 @@ div[id^='_box_util_'] {
   height: 200px;
   z-index: 1;
   border: 3px solid white;
-  border-radius: 4px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 .finish-btn {
   position: absolute;
-  bottom: 30px; /* 바닥에서 띄울 간격 */
-  right: 30px; /* 오른쪽에서 띄울 간격 */
-  z-index: 10; /* 로드뷰보다 위에 표시 */
-
-  /* 그림자 등으로 좀 더 잘 보이게 꾸미기 */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  bottom: 30px;
+  right: 30px;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 .warning-toast {
   position: absolute;
   bottom: 50px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 10;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 12px 24px;
-  border-radius: 8px;
+  z-index: 3000;
+  background-color: rgba(33, 33, 33, 0.95);
+  color: #f8f4e8;
+  padding: 14px 28px;
+  border-radius: 30px;
   font-weight: bold;
+  font-size: 1rem;
   pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 .toast-enter-active,
 .toast-leave-active {

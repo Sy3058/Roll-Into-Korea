@@ -1,7 +1,7 @@
-// 지정된 건물에 퀘스트 마크 띄우기
-import { ref } from 'vue';
+import { ref, createVNode, render } from 'vue';
+import type { QuestData } from '@/types/quest';
+import QuestMarker from '@/components/map/QuestMarker.vue';
 
-// 하버사인 거리 공식 (미터 단위)
 const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -15,51 +15,76 @@ const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => 
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 1000;
 };
 
-export const useQuestSystem = (onQuestClick: (msg: string) => void) => {
-  interface QuestObject {
+export const useQuestSystem = (onQuestClick: (quest: QuestData) => void) => {
+  interface QuestObject extends QuestData {
     overlay: kakao.maps.CustomOverlay;
-    lat: number;
-    lng: number;
     isVisible: boolean;
-    name: string;
+    containerElement: HTMLDivElement; // Store the container to clean up Vue later
   }
+
   const quests = ref<QuestObject[]>([]);
 
-  // TODO: 건물 위치 백엔드와 연결 필요
-  const questData = [
-    { name: '근정전', lat: 37.578611, lng: 126.977222 },
-    { name: '경회루', lat: 37.579817, lng: 126.975968 },
-    { name: '향원정', lat: 37.582894, lng: 126.976996 },
-    { name: '국립민속박물관', lat: 37.581533, lng: 126.979068 },
+  // dummy data
+  const rawQuestData: QuestData[] = [
+    {
+      id: 1,
+      name: 'Geunjeongjeon Hall',
+      lat: 37.578611,
+      lng: 126.977222,
+      type: 'LANDMARK',
+      description: 'The main throne hall of Gyeongbokgung Palace.',
+    },
+    {
+      id: 2,
+      name: 'Royal Snack Shop',
+      lat: 37.579817,
+      lng: 126.975968,
+      type: 'SHOP',
+      items: [
+        { id: 101, name: 'Royal Tea', price: 4500, category: 'FOOD' },
+        { id: 102, name: 'Rice Cake', price: 3000, category: 'FOOD' },
+        { id: 103, name: 'Palace Keyring', price: 8000, category: 'GIFT' },
+      ],
+    },
+    {
+      id: 3,
+      name: 'Folk Museum',
+      lat: 37.581533,
+      lng: 126.979068,
+      type: 'LANDMARK',
+      description: 'A national museum of South Korea.',
+    },
   ];
 
   const initQuests = () => {
-    if (!window.kakao) return;
+    if (!window.kakao || !window.kakao.maps) return;
 
-    questData.forEach((data) => {
-      const content = document.createElement('div');
-      content.className = 'QuestMark';
-      content.innerHTML = `
-        <div class="icon-bg"><span class="icon-text">!</span></div>
-        <div class="quest-name">${data.name}</div>
-      `;
-      content.onclick = () => onQuestClick(`[퀘스트] ${data.name} 발견!`);
+    rawQuestData.forEach((data) => {
+      // 1. Create a container div
+      const container = document.createElement('div');
 
-      // 처음엔 map: null로 숨김 상태
+      // 2. Render Vue Component into the container
+      const vnode = createVNode(QuestMarker, {
+        name: data.name,
+        type: data.type,
+        onClick: () => onQuestClick(data), // Pass the click handler
+      });
+      render(vnode, container);
+
+      // 3. Create Kakao Overlay
       const overlay = new window.kakao.maps.CustomOverlay({
         map: null,
         position: new window.kakao.maps.LatLng(data.lat, data.lng),
-        content: content,
-        yAnchor: 10.0,
-        zIndex: 10,
+        content: container,
+        yAnchor: 1.5,
+        zIndex: 20,
       });
 
       quests.value.push({
+        ...data,
         overlay,
-        lat: data.lat,
-        lng: data.lng,
         isVisible: false,
-        name: data.name,
+        containerElement: container,
       });
     });
   };
@@ -68,7 +93,7 @@ export const useQuestSystem = (onQuestClick: (msg: string) => void) => {
     const currentPos = roadview.getPosition();
     const curLat = currentPos.getLat();
     const curLng = currentPos.getLng();
-    const VISIBLE_RADIUS = 40; // 40m 이내 접근 시 표시
+    const VISIBLE_RADIUS = 50;
 
     quests.value.forEach((q) => {
       const dist = getDistance(curLat, curLng, q.lat, q.lng);
