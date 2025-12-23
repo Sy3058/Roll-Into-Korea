@@ -10,7 +10,7 @@
     <LocationModal
       :is-open="isLocationModalOpen"
       :location-data="selectedQuest"
-      :user-money="userMoney"
+      :user-money="money"
       @close="closeLocationModal"
       @buy-item="handleBuyItem"
     />
@@ -42,6 +42,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
+
+// Types
 import type { QuestData, ShopItem } from '@/types/quest';
 
 // Composables
@@ -49,6 +52,9 @@ import { useKakaoLoader } from '@/composables/map/useKakaoLoader';
 import { useGeofencing } from '@/composables/map/useGeofencing';
 import { useMapWalker } from '@/composables/map/useMapWalker';
 import { useQuestSystem } from '@/composables/map/useQuestSystem';
+
+// Store
+import { usePlayerStore } from '@/stores/player';
 
 // Components
 import BaseButton from '@/components/common/BaseButton.vue';
@@ -59,14 +65,15 @@ const mapRef = ref<HTMLElement | null>(null);
 const rvRef = ref<HTMLElement | null>(null);
 const router = useRouter();
 
+// Store 연결
+const playerStore = usePlayerStore();
+const { money } = storeToRefs(playerStore); // 반응형 유지
+
 // UI States
 const isFinishModalOpen = ref(false);
 const isLocationModalOpen = ref(false);
 const isWarningVisible = ref(false);
 const warningMsg = ref('');
-
-// Data
-const userMoney = ref(50000);
 const selectedQuest = ref<QuestData | null>(null);
 
 // Helper
@@ -78,7 +85,7 @@ const showToast = (msg: string) => {
   warningTimeout = setTimeout(() => (isWarningVisible.value = false), 2000);
 };
 
-// --- Logic ---
+// Composables
 const { loadScript } = useKakaoLoader();
 const { getBoundaryPath, isPointInPolygon } = useGeofencing();
 const { createWalker, updateWalkerPosition, updateWalkerRotation } = useMapWalker();
@@ -89,12 +96,19 @@ const { initQuests, updateQuestVisibility } = useQuestSystem((quest) => {
   isLocationModalOpen.value = true;
 });
 
-const handleBuyItem = (item: ShopItem) => {
-  if (userMoney.value >= item.price) {
-    userMoney.value -= item.price;
+// 구매 로직
+const handleBuyItem = async (item: ShopItem) => {
+  // 중복 클릭 방지 (스토어 상태 활용)
+  if (playerStore.isTransactionPending) return;
+
+  // 스토어 액션 호출
+  const success = await playerStore.buyItem(item);
+
+  // UI 피드백
+  if (success) {
     showToast(`💳 ${item.name} 구매 완료!`);
   } else {
-    showToast('💸 잔액이 부족합니다!');
+    showToast('💸 잔액이 부족하거나 오류가 발생했습니다!');
   }
 };
 

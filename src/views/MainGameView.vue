@@ -41,12 +41,17 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
+
 import { GameBoard } from '@/game/GameBoard';
 import JourneyPanel from '@/components/journey/JourneyPanel.vue';
 import StreetViewModal from '@/components/ui/StreetViewModal.vue';
 import diceIcon from '@/assets/ui/dice_3D_detailed.png';
 import profileImg from '@/assets/images/profile.png';
 import RollingDice from '@/components/ui/RollingDice.vue';
+
+// Store
+import { usePlayerStore } from '@/stores/player';
 
 // 모달 상태 관리
 const showModal = ref(false);
@@ -55,16 +60,14 @@ const currentLocName = ref('');
 // 라우터 관리
 const router = useRouter();
 
+// Store 연결
+const playerStore = usePlayerStore();
+const { money, formattedMoney } = storeToRefs(playerStore);
+
 // Refs
 const boardContainer = ref<HTMLDivElement | null>(null);
 const currentTileIndex = ref<number>(0);
 const diceRef = ref<InstanceType<typeof RollingDice> | null>(null);
-// TODO: 백엔드 연결 필요
-const playerMoney = ref(300000);
-
-const formattedMoney = computed(() => {
-  return playerMoney.value.toLocaleString();
-});
 
 // Game Instance
 let game: GameBoard | null = null;
@@ -90,7 +93,7 @@ onUnmounted(() => {
 
 const goToJourney = () => {
   router.push('/journey');
-}
+};
 
 /**
  * 주사위 굴리기 버튼 관리
@@ -104,7 +107,7 @@ const onRollClick = () => {
 
 /**
  * 주사위 결과 수신 및 이동 로직
- * @param result 
+ * @param result
  */
 const handleRollComplete = async (result: number) => {
   console.log('주사위 결과:', result);
@@ -121,7 +124,7 @@ const handleRollComplete = async (result: number) => {
     console.log('도착:', info.name);
 
     if (info.price) {
-      playerMoney.value += info.price;
+      money.value += info.price;
     }
 
     // 모달 열기
@@ -202,7 +205,9 @@ const handleEnterStreetView = () => {
   border: 3px solid #fff;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .money-info {
