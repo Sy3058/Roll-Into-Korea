@@ -1,14 +1,14 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { ShopItem } from '@/types/quest';
-import { shopService } from '@/services/shopService';
+import { gameApi } from '@/api/gameApi';
+import type { BuyItemRequest } from '@/types/game';
 
 export const usePlayerStore = defineStore(
   'player',
   () => {
     // State
-    const money = ref(300000); // 초기 자금
-    const inventory = ref<ShopItem[]>([]); // 보유 아이템 목록
+    const money = ref(0); // 초기 자금
+    const inventory = ref<any[]>([]); // 보유 아이템 목록
     const isTransactionPending = ref(false); // 결제 진행 중 여부
 
     // 계산된 상태
@@ -17,41 +17,37 @@ export const usePlayerStore = defineStore(
     // Actions
 
     /**
-     * 아이템 구매 액션
+     * 아이템 구매
      * UI에서 호출하면 서비스 레이어를 통해 결제를 진행하고 상태를 업데이트함
      */
-    async function buyItem(item: ShopItem): Promise<boolean> {
-      // 중복 요청 방지 (이미 처리 중이면 무시)
+    const buyItem = async (item: BuyItemRequest) => {
       if (isTransactionPending.value) return false;
 
-      // 유효성 검사 (잔액 확인)
-      if (money.value < item.price) {
+      // 1차 검증 (돈 부족한지 확인)
+      if (money.value < item.cost) {
+        alert('돈이 부족합니다!');
         return false;
       }
 
-      isTransactionPending.value = true; // 로딩 시작
-
+      isTransactionPending.value = true;
       try {
-        // 서비스 레이어 호출 (비즈니스 로직 위임)
-        const newBalance = await shopService.purchaseItem(
-          item.id,
-          item.name,
-          item.category,
-          item.price,
-          money.value,
-        );
+        const response = await gameApi.buyItem(item);
 
-        // 성공 시 상태 업데이트 (잔액 갱신 및 인벤토리 추가)
-        money.value = newBalance;
-        inventory.value.push(item);
-        return true; // 구매 성공
+        if (response.success) {
+          money.value = response.data.money;
+          inventory.value.push(item);
+          return true;
+        } else {
+          alert(response.message);
+          return false;
+        }
       } catch (error) {
         console.error('구매 실패:', error);
-        return false; // 구매 실패
+        return false;
       } finally {
-        isTransactionPending.value = false; // 로딩 종료
+        isTransactionPending.value = false;
       }
-    }
+    };
 
     return {
       money,

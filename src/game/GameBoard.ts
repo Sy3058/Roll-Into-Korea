@@ -10,16 +10,20 @@ export class GameBoard {
   private boardContainer = new Container();
   private playerSprite!: Graphics;
   private tileSprites: BoardCard[] = [];
+  private boardData: any[] = [];
 
   // 상태 관련 변수
   private currentTileIndex = 0;
   private boardSizePx = 0;
   private onTileChange?: (index: number) => void;
 
-  constructor(options: GameOptions & { initialIndex?: number }) {
+  constructor(options: GameOptions & { initialIndex?: number; boardData?: any[] }) {
     this.onTileChange = options.onTileChange;
     // 저장된 위치로 변경
     this.currentTileIndex = options.initialIndex || 0;
+
+    // 데이터 저장
+    this.boardData = options.boardData || [];
 
     this.app = new Application();
 
@@ -67,8 +71,18 @@ export class GameBoard {
     const offset = -this.boardSizePx / 2; // 중앙 정렬을 위한 offset
 
     for (let i = 0; i < TOTAL_TILES; i++) {
-      const info = getTileInfo(i);
       const rect = getBoardRect(i); // 슬롯의 위치와 크기
+
+      // BoardUtils에서 구조 정보만 가져오기
+      const structInfo = getTileInfo(i);
+      // 백엔드 데이터
+      const apiData = this.boardData[i];
+
+      // 데이터 병합
+      const finalName = apiData?.name || structInfo.name;
+      const finalPrice = apiData?.reward || structInfo.price;
+      const isSpecialTile = structInfo.type === 'corner' || structInfo.type === 'chance';
+      const finalType = isSpecialTile ? structInfo.type : apiData?.type || 'basic';
 
       // 슬롯의 물리적 좌표 및 크기
       const slotX = offset + rect.x * BASE_UNIT_PX;
@@ -86,10 +100,10 @@ export class GameBoard {
         width: cardW,
         height: cardH,
         index: i,
-        type: info.type,
-        name: info.name,
-        price: info.type === 'basic' || info.type === 'festival' ? info.price : undefined,
-        color: info.color,
+        type: finalType,
+        name: finalName,
+        price: finalPrice,
+        color: structInfo.color,
       });
 
       // 위치, 회전 축

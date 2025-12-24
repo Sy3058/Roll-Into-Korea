@@ -75,14 +75,18 @@ export class BoardCard extends Container {
 
     // 관광지 이름
     if (name) {
+      let displayName = name; // 5글자 초과하면 줄바꿈 + ... 처리
+      if (name.length > 5) {
+        displayName = name.slice(0, 5) + '\n...';
+      }
       const nameText = new Text({
-        text: name,
+        text: displayName,
         style: new TextStyle({
           fontSize: width * 0.18,
           fontWeight: 'bold',
           fill: '#000000',
           align: 'center',
-          wordWrap: true,
+          wordWrap: false,
           wordWrapWidth: width * 0.9,
         }),
       });
@@ -118,8 +122,12 @@ export class BoardCard extends Container {
 
     // 축제 이름
     if (name) {
+      let displayName = name; // 5글자 초과하면 줄바꿈 + ... 처리
+      if (name.length > 5) {
+        displayName = name.slice(0, 5) + '\n...';
+      }
       const nameText = new Text({
-        text: name,
+        text: displayName,
         style: new TextStyle({
           fontSize: width * 0.18,
           fontWeight: 'bold',

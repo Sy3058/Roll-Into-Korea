@@ -81,6 +81,8 @@ const isRolling = ref(false); // 주사위 굴러가는 중 버튼 클릭 방지
 onMounted(async () => {
   if (!boardContainer.value) return;
 
+  await gameStore.fetchInitialData();
+
   // 새로고침으로 중단된 이동이 있는지 확인
   if (gameStore.isTurnInProgress && gameStore.lastDiceResult) {
     console.log(`중단된 턴 복구: 주사위 ${gameStore.lastDiceResult}`);
@@ -100,6 +102,7 @@ onMounted(async () => {
   game = new GameBoard({
     container: boardContainer.value,
     initialIndex: gameStore.currentTileIndex,
+    boardData: gameStore.boardTiles,
     onTileChange: (index) => {
       currentTileIndex.value = index;
     },
@@ -119,7 +122,7 @@ onMounted(async () => {
 /**
  * 도착 이벤트 핸들러
  */
-const checkArrivalEvent = () => {
+const checkArrivalEvent = async () => {
   if (!game) return;
 
   // 현재 위치 정보 가져오기
@@ -129,18 +132,15 @@ const checkArrivalEvent = () => {
   // Store에 최종 위치 저장
   gameStore.setPosition(info.index);
 
-  // 돈 획득 로직
-  if (info.price) {
-    // 중복 획득 방지 (이벤트 처리 안 됐을 때만 지급)
-    if (!gameStore.isEventHandled) money.value += info.price;
-  }
-
   // 장소 모달 열기
   if (info.type === 'basic' || info.type === 'festival') {
     if (gameStore.isEventHandled) {
       console.log('이미 확인한 장소입니다');
       return;
     }
+
+    // 복구 로직일 때 처리 안 된 경우에만 서버에 요청
+    await gameStore.arriveAtTile(info.index);
 
     currentLocName.value = info.name || '알 수 없는 장소';
 

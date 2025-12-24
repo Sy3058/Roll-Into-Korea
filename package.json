@@ -19,6 +19,7 @@
     "@dimforge/rapier3d-compat": "^0.19.3",
     "@tresjs/cientos": "^5.2.0",
     "@tresjs/core": "^5.2.0",
+    "axios": "^1.13.2",
     "gsap": "^3.14.2",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
