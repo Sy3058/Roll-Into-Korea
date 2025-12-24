@@ -1,4 +1,5 @@
 // 게임 저장, 로드, 점수 전송 API
+import type { LandmarkTripData } from '@/types/quest';
 import axios from './axios';
 import type {
   ApiResponse,
@@ -39,6 +40,15 @@ export const gameApi = {
   },
 
   /**
+   * 여행지 내부 장소 받아오기
+   * @param landmarkId - 여행지 Id
+   * @returns
+   */
+  getLandmarkDetail: async (landmarkId: string): Promise<ApiResponse<LandmarkTripData>> => {
+    return await axios.get(`/game/landmark/${landmarkId}`);
+  },
+
+  /**
    * 아이템 구매
    * @param itemId
    * @returns
@@ -47,6 +57,11 @@ export const gameApi = {
     return await axios.post(ENDPOINTS.ITEM, payload);
   },
 
+  /**
+   * 아이템 기부
+   * @param badgeId
+   * @returns
+   */
   donateBadge: async (badgeId: number): Promise<ApiResponse<DonateResponse>> => {
     const payload: DonateRequest = { badgeId };
     return await axios.post(ENDPOINTS.DONATE, payload);

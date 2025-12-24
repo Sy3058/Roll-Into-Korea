@@ -131,7 +131,7 @@ export interface BackendLandmark {
   description: string;
   thumbnailImgUrl: string;
   regionCode: string;
-  reward: number; // Money given upon arrival
+  reward: number;
   lat: number;
   lng: number;
 }
