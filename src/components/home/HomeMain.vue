@@ -25,7 +25,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
-import HeroDice from '@/components/hero/HeroDice.vue';
+import HeroDice from '@/components/ui/HeroDice.vue';
 import { ref } from 'vue';
 
 const router = useRouter();
