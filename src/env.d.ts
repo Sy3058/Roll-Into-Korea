@@ -1,8 +1,9 @@
 /// <reference types="vite/client" />
+/// <reference types="pinia-plugin-persistedstate" />
 
 declare module '*.vue' {
-  import type { DefineComponent } from 'vue'
+  import type { DefineComponent } from 'vue';
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const component: DefineComponent<Record<string, unknown>, Record<string, unknown>, any>
-  export default component
+  const component: DefineComponent<Record<string, unknown>, Record<string, unknown>, any>;
+  export default component;
 }

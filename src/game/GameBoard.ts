@@ -16,8 +16,11 @@ export class GameBoard {
   private boardSizePx = 0;
   private onTileChange?: (index: number) => void;
 
-  constructor(options: GameOptions) {
+  constructor(options: GameOptions & { initialIndex?: number }) {
     this.onTileChange = options.onTileChange;
+    // 저장된 위치로 변경
+    this.currentTileIndex = options.initialIndex || 0;
+
     this.app = new Application();
 
     // 초기화
@@ -157,8 +160,8 @@ export class GameBoard {
       .fill(0xff0000)
       .stroke({ width: 3, color: 0xffffff });
 
-    // 시작 위치로 이동
-    const startTile = this.tileSprites[0];
+    // 시작 위치로 이동 (기존에 저장된 위치로)
+    const startTile = this.tileSprites[this.currentTileIndex];
     if (startTile) {
       this.playerSprite.position.set(startTile.x, startTile.y);
     }
@@ -176,6 +179,32 @@ export class GameBoard {
 
     if (currentTile.type === 'basic' || currentTile.type === 'festival') {
       await this.showMoneyEffect();
+    }
+  }
+
+  /**
+   * 플레이어 위치 설정 (저장된 게임 불러오기)
+   * @param index - 플레이어 위치
+   * @returns
+   */
+  public setPlayerPosition(index: number) {
+    if (index < 0 || index >= this.tileSprites.length) {
+      console.warn(`Invalid tile index: ${index}`);
+      return;
+    }
+
+    // 내부 상태 업데이트
+    this.currentTileIndex = index;
+
+    // 애니메이션 없이 위치 업데이트
+    const targetTile = this.tileSprites[index];
+    if (targetTile && this.playerSprite) {
+      this.playerSprite.position.set(targetTile.x, targetTile.y);
+    }
+
+    // UI 동기화
+    if (this.onTileChange) {
+      this.onTileChange(index);
     }
   }
 

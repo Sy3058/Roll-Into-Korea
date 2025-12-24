@@ -32,14 +32,14 @@
     <StreetViewModal
       :is-open="showModal"
       :location-name="currentLocName"
-      @close="showModal = false"
+      @close="handleCloseModal"
       @enter-streetview="handleEnterStreetView"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
@@ -52,6 +52,8 @@ import RollingDice from '@/components/ui/RollingDice.vue';
 
 // Store
 import { usePlayerStore } from '@/stores/player';
+import { useGameStore } from '@/stores/game';
+import { BOARD_CONFIG } from '@/game/BoardUtils';
 
 // 모달 상태 관리
 const showModal = ref(false);
@@ -62,6 +64,7 @@ const router = useRouter();
 
 // Store 연결
 const playerStore = usePlayerStore();
+const gameStore = useGameStore();
 const { money, formattedMoney } = storeToRefs(playerStore);
 
 // Refs
@@ -78,14 +81,74 @@ const isRolling = ref(false); // 주사위 굴러가는 중 버튼 클릭 방지
 onMounted(async () => {
   if (!boardContainer.value) return;
 
+  // 새로고침으로 중단된 이동이 있는지 확인
+  if (gameStore.isTurnInProgress && gameStore.lastDiceResult) {
+    console.log(`중단된 턴 복구: 주사위 ${gameStore.lastDiceResult}`);
+
+    // 강제로 위치 계산
+    const totalTiles = BOARD_CONFIG.TOTAL_TILES || 40;
+    const nextIndex = (gameStore.currentTileIndex + gameStore.lastDiceResult) % totalTiles;
+
+    // 이동 완료 처리
+    gameStore.setPosition(nextIndex);
+
+    // 턴 종료
+    gameStore.endTurn();
+  }
+
   // Game Engine 초기화
   game = new GameBoard({
     container: boardContainer.value,
+    initialIndex: gameStore.currentTileIndex,
     onTileChange: (index) => {
       currentTileIndex.value = index;
     },
   });
+
+  // 복구된 상태라면 도착한 칸의 이벤트 실행
+  if (gameStore.lastDiceResult === null && gameStore.currentTileIndex > 0) {
+    setTimeout(() => {
+      console.log('도착 이벤트 복구 실행');
+      checkArrivalEvent();
+    }, 500);
+  }
+
+  currentTileIndex.value = gameStore.currentTileIndex;
 });
+
+/**
+ * 도착 이벤트 핸들러
+ */
+const checkArrivalEvent = () => {
+  if (!game) return;
+
+  // 현재 위치 정보 가져오기
+  const info = game.getCurrentTileInfo();
+  console.log('도착 처리:', info.name);
+
+  // Store에 최종 위치 저장
+  gameStore.setPosition(info.index);
+
+  // 돈 획득 로직
+  if (info.price) {
+    // 중복 획득 방지 (이벤트 처리 안 됐을 때만 지급)
+    if (!gameStore.isEventHandled) money.value += info.price;
+  }
+
+  // 장소 모달 열기
+  if (info.type === 'basic' || info.type === 'festival') {
+    if (gameStore.isEventHandled) {
+      console.log('이미 확인한 장소입니다');
+      return;
+    }
+
+    currentLocName.value = info.name || '알 수 없는 장소';
+
+    setTimeout(() => {
+      showModal.value = true;
+    }, 300);
+  }
+};
 
 onUnmounted(() => {
   if (game) game.destroy();
@@ -100,6 +163,7 @@ const goToJourney = () => {
  */
 const onRollClick = () => {
   if (diceRef.value && !isRolling.value && !isMoving.value) {
+    gameStore.startTurn();
     isRolling.value = true;
     diceRef.value.roll();
   }
@@ -116,27 +180,27 @@ const handleRollComplete = async (result: number) => {
   if (game) {
     isMoving.value = true;
 
-    // 플레이어 이동 대기
+    // 이동 전 상태 저장 (새로고침 대비)
+    gameStore.setLastDiceResult(result);
+
+    // 이동 애니메이션
     await game.playTurn(result);
 
-    // 이동 완료 후 도착한 타일 정보 확인
-    const info = game.getCurrentTileInfo();
-    console.log('도착:', info.name);
+    // 이동 완료 후 턴 종료
+    gameStore.endTurn();
 
-    if (info.price) {
-      money.value += info.price;
-    }
-
-    // 모달 열기
-    if (info.type === 'basic' || info.type === 'festival') {
-      currentLocName.value = info.name || 'Unknown Location';
-      setTimeout(() => {
-        showModal.value = true;
-      }, 300);
-    }
+    checkArrivalEvent();
 
     isMoving.value = false;
   }
+};
+
+/**
+ * 모달 닫기
+ */
+const handleCloseModal = () => {
+  showModal.value = false;
+  gameStore.completeEvent();
 };
 
 /**
@@ -144,6 +208,7 @@ const handleRollComplete = async (result: number) => {
  */
 const handleEnterStreetView = () => {
   showModal.value = false;
+  gameStore.completeEvent();
   router.push('/map');
 };
 </script>
