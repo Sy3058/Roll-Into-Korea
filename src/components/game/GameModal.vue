@@ -150,6 +150,15 @@ const emit = defineEmits<{
   display: block;
 }
 
+.content-text {
+  padding: 30px 20px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-align: center;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
 /* 5. 액션 버튼 (Placeholder) */
 .game-actions {
   display: flex;

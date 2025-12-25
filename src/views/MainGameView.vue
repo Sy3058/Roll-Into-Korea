@@ -140,24 +140,30 @@ onMounted(async () => {
 const checkArrivalEvent = async () => {
   if (!game) return;
 
-  const info = game.getCurrentTileInfo();
-  console.log('도착 처리:', info.name, info.type);
-  console.log(`[${info.name}] 이미지 데이터:`, info.imgUrl);
+  const { index } = game.getCurrentTileInfo();
+  const tileData = gameStore.boardTiles[index];
 
-  gameStore.setPosition(info.index);
+  if (!tileData) {
+    console.error(`타일 데이터를 찾을 수 없습니다. index: ${index}`);
+    return;
+  }
+
+  console.log(`도착: [${tileData.name}] (${tileData.type})`);
+  console.log(`이미지: ${tileData.imgUrl}`);
+
+  // Store에 위치 동기화
+  gameStore.setPosition(index);
   if (gameStore.isEventHandled) return;
 
-  // 1. 축제 도착
-  if (info.type === 'festival') {
-    onEnterFest(info);
-  }
-  // 2. 일반 여행지
-  else if (info.type === 'basic') {
-    await gameStore.arriveAtTile(info.index); // 보상 획득
+  if (tileData.type === 'festival') {
+    onEnterFest(index); // index만 넘겨줍니다.
+  } else if (tileData.type === 'basic') {
+    await gameStore.arriveAtTile(index);
 
-    currentLocName.value = info.name || '알 수 없는 장소';
-
-    currentLocImg.value = info.imgUrl || '';
+    currentLocName.value = tileData.name;
+    currentLocImg.value = tileData.imgUrl
+      ? tileData.imgUrl
+      : 'https://placehold.co/600x400/png?text=No+Image&font=roboto';
 
     modalType.value = 'trip';
     setTimeout(() => {
@@ -169,12 +175,18 @@ const checkArrivalEvent = async () => {
 /**
  * 축제 도착 처리 함수
  */
-const onEnterFest = async (info: any) => {
+const onEnterFest = async (index: number) => {
   console.log('축제 도착!');
-  await gameStore.arriveAtTile(info.index);
 
-  currentLocName.value = info.name || '축제';
-  currentLocImg.value = info.imgUrl || '';
+  const tileData = gameStore.boardTiles[index];
+
+  await gameStore.arriveAtTile(index);
+
+  currentLocName.value = tileData.name;
+
+  currentLocImg.value = tileData.imgUrl
+    ? tileData.imgUrl
+    : 'https://placehold.co/600x400/orange/white?text=Festival!&font=roboto';
 
   modalType.value = 'festival';
   setTimeout(() => {

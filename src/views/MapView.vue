@@ -130,10 +130,7 @@ const confirmFinish = async () => {
       const result = response.data;
       // 뱃지 업데이트
       await playerStore.updateEarnedBadges(result);
-      const earnedBadges =
-        (result.items?.length || 0) + (result.spots?.length || 0) + (result.trophies?.length || 0);
 
-      alert(`여행 종료!\n배지 ${earnedBadges}개 획득!`);
       playerStore.clearInventory();
       isFinishModalOpen.value = false;
       router.push('/game');

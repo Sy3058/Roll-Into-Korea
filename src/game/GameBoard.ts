@@ -262,15 +262,11 @@ export class GameBoard {
 
   /**
    * 현재 타일 정보 반환
-   * @returns index, name, type, reward
+   * @returns index
    */
-  public getCurrentTileInfo(): TileInfo {
-    const card = this.tileSprites[this.currentTileIndex];
+  public getCurrentTileInfo() {
     return {
       index: this.currentTileIndex,
-      name: card?.getName(),
-      type: card?.getType(),
-      reward: card?.getReward(),
     };
   }
 
