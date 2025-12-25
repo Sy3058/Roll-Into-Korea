@@ -138,6 +138,30 @@ export interface JourneyData {
   items: ItemType[];
 }
 
+// =================== Map & Quest ===================
+export interface MapQuestItem {
+  id: number;
+  name: string;
+  cost: number;
+  category: 'FOOD' | 'GIFT';
+}
+
+export interface MapQuest {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  type: 'LANDMARK' | 'SHOP';
+  description?: string;
+  items?: MapQuestItem[];
+}
+
+// 3. 경계선 좌표
+export interface BoundaryPoint {
+  lat: number;
+  lng: number;
+}
+
 // =================== API DTO ===================
 
 // 공통 Response Wrapper
@@ -236,4 +260,12 @@ export interface DonateResponse {
 export interface ItemTransactionRequest {
   itemId: number;
   cost?: number;
+}
+
+// Landmark
+export interface LandmarkMapData {
+  quests: MapQuest[];
+  boundary: {
+    points: BoundaryPoint[];
+  };
 }

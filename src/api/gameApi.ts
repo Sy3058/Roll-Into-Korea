@@ -1,5 +1,5 @@
 // 게임 저장, 로드, 점수 전송 API
-import type { LandmarkTripData } from '@/types/quest';
+import type { LandmarkMapData, LandmarkTripData } from '@/types/quest';
 import axios from './axios';
 import type {
   ApiResponse,
@@ -18,6 +18,7 @@ const ENDPOINTS = {
   REWARD: '/game/reward',
   ITEM: '/game/item',
   DONATE: '/game/donate',
+  LANDMARK_MAP: (id: string) => `/map/landmark/${id}`,
 };
 
 export const gameApi = {
@@ -65,5 +66,14 @@ export const gameApi = {
   donateItem: async (badgeId: number): Promise<ApiResponse<DonateResponse>> => {
     const payload: DonateRequest = { badgeId };
     return await axios.post(ENDPOINTS.DONATE, payload);
+  },
+
+  /**
+   * 특정 여행지의 맵 데이터 가져오기
+   * @param landmarkId
+   * @returns
+   */
+  fetchLandmarkMap: async (landmarkId: string): Promise<ApiResponse<LandmarkMapData>> => {
+    return await axios.get(ENDPOINTS.LANDMARK_MAP(landmarkId));
   },
 };

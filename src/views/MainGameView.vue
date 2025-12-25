@@ -97,8 +97,13 @@ const isRolling = ref(false); // 주사위 굴러가는 중 버튼 클릭 방지
 onMounted(async () => {
   if (!boardContainer.value) return;
 
-  // 게임 초기 데이터 로드
-  await gameStore.fetchInitialData();
+  // 게임 초기 데이터 로드 (처음 한 번만)
+  if (!gameStore.boardTiles || gameStore.boardTiles.length === 0) {
+    await gameStore.fetchInitialData();
+  } else {
+    console.log('저장된 보드 데이터를 불러옵니다.');
+  }
+
   // 내 여행 정보 로드 (레벨, 돈 정보 등을 위해 유지)
   await playerStore.fetchJourneyData();
 

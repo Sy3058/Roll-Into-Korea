@@ -1,6 +1,14 @@
+// src/composables/map/useQuestSystem.ts
 import { ref, createVNode, render } from 'vue';
-import type { QuestData } from '@/types/game'; // types/quest -> types/game 확인
+import type { MapQuest } from '@/types/game'; // game.ts에서 import
 import QuestMarker from '@/components/map/QuestMarker.vue';
+
+// 퀘스트 객체 (오버레이 포함)
+interface QuestObject extends MapQuest {
+  overlay: any; // kakao.maps.CustomOverlay
+  isVisible: boolean;
+  containerElement: HTMLDivElement;
+}
 
 // 거리 계산 함수 (기존 유지)
 const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
@@ -16,59 +24,32 @@ const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => 
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 1000;
 };
 
-export const useQuestSystem = (onQuestClick: (quest: QuestData) => void) => {
-  interface QuestObject extends QuestData {
-    overlay: kakao.maps.CustomOverlay;
-    isVisible: boolean;
-    containerElement: HTMLDivElement;
-  }
-
+export const useQuestSystem = (onQuestClick: (quest: MapQuest) => void) => {
   const quests = ref<QuestObject[]>([]);
 
-  // 🔥 [수정] price -> cost로 변경
-  const rawQuestData: QuestData[] = [
-    {
-      id: 1,
-      name: 'Geunjeongjeon Hall',
-      lat: 37.578611,
-      lng: 126.977222,
-      type: 'LANDMARK',
-      description: 'The main throne hall of Gyeongbokgung Palace.',
-    },
-    {
-      id: 2,
-      name: 'Royal Snack Shop',
-      lat: 37.579817,
-      lng: 126.975968,
-      type: 'SHOP',
-      items: [
-        { id: 101, name: 'Royal Tea', cost: 4500, category: 'FOOD' }, // price -> cost
-        { id: 102, name: 'Rice Cake', cost: 3000, category: 'FOOD' }, // price -> cost
-        { id: 103, name: 'Palace Keyring', cost: 8000, category: 'GIFT' }, // price -> cost
-      ],
-    },
-    {
-      id: 3,
-      name: 'Folk Museum',
-      lat: 37.581533,
-      lng: 126.979068,
-      type: 'LANDMARK',
-      description: 'A national museum of South Korea.',
-    },
-  ];
-
-  const initQuests = () => {
+  /**
+   * 퀘스트 초기화 (API 데이터를 그대로 사용)
+   */
+  const initQuests = (questList: MapQuest[]) => {
     if (!window.kakao || !window.kakao.maps) return;
 
-    rawQuestData.forEach((data) => {
+    // 기존 오버레이 제거
+    quests.value.forEach((q) => q.overlay.setMap(null));
+    quests.value = [];
+
+    questList.forEach((data) => {
+      // 1. 마커 컨테이너 생성
       const container = document.createElement('div');
+
+      // 2. Vue 컴포넌트 렌더링
       const vnode = createVNode(QuestMarker, {
         name: data.name,
         type: data.type,
-        onClick: () => onQuestClick(data),
+        onClick: () => onQuestClick(data), // 데이터 그대로 전달
       });
       render(vnode, container);
 
+      // 3. 카카오 오버레이 생성
       const overlay = new window.kakao.maps.CustomOverlay({
         map: null,
         position: new window.kakao.maps.LatLng(data.lat, data.lng),
@@ -86,11 +67,14 @@ export const useQuestSystem = (onQuestClick: (quest: QuestData) => void) => {
     });
   };
 
-  const updateQuestVisibility = (roadview: kakao.maps.Roadview) => {
+  /**
+   * 가시성 업데이트 (로드뷰 위치 기준)
+   */
+  const updateQuestVisibility = (roadview: any) => {
     const currentPos = roadview.getPosition();
     const curLat = currentPos.getLat();
     const curLng = currentPos.getLng();
-    const VISIBLE_RADIUS = 50;
+    const VISIBLE_RADIUS = 50; // 50미터
 
     quests.value.forEach((q) => {
       const dist = getDistance(curLat, curLng, q.lat, q.lng);

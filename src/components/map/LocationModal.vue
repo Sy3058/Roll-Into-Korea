@@ -2,51 +2,35 @@
   <Teleport to="body">
     <Transition name="pop">
       <div v-if="isOpen" class="modal-overlay" @click.self="$emit('close')">
-        <div class="game-card" :class="locationData?.type?.toLowerCase()">
-          <div class="game-header">
-            <span class="icon">{{ locationData?.type === 'SHOP' ? '🛒' : '📍' }}</span>
-            <h2 class="title">{{ locationData?.name }}</h2>
+        <div class="modal-card">
+          <div class="modal-header">
+            <h3>{{ locationData?.name || '장소 정보' }}</h3>
             <button class="close-btn" @click="$emit('close')">✕</button>
           </div>
 
-          <div class="game-body">
-            <div v-if="locationData?.type === 'SHOP'" class="shop-view">
-              <div class="money-display">
-                <span class="coin-icon">💰</span>
-                <span class="amount">₩{{ userMoney.toLocaleString() }}</span>
-              </div>
+          <div class="modal-body">
+            <div class="description">
+              {{ locationData?.description || '설명이 없습니다.' }}
+            </div>
 
-              <div v-if="locationData.items && locationData.items.length > 0" class="items-list">
-                <div v-for="item in locationData.items" :key="item.id" class="shop-item">
-                  <div class="item-left">
-                    <div class="item-icon">{{ getCategoryIcon(item.category) }}</div>
-                    <div class="item-info">
-                      <div class="item-name">{{ item.name }}</div>
-                      <div class="item-cost">₩{{ item.cost.toLocaleString() }}</div>
-                    </div>
+            <div v-if="locationData?.type === 'SHOP'" class="shop-section">
+              <h4>🛒 판매 물품</h4>
+              <ul class="item-list">
+                <li v-for="item in locationData.items" :key="item.id" class="item-row">
+                  <div class="item-info">
+                    <span class="item-name">{{ item.name }}</span>
+                    <span class="item-cost">₩{{ item.cost.toLocaleString() }}</span>
                   </div>
-                  <button
-                    class="buy-btn"
+                  <BaseButton
+                    size="sm"
                     :disabled="userMoney < item.cost"
                     @click="$emit('buy-item', item)"
                   >
-                    {{ userMoney < item.cost ? '부족' : '구매' }}
-                  </button>
-                </div>
-              </div>
-              <div v-else class="empty-state">진열된 상품이 없습니다.</div>
+                    구매
+                  </BaseButton>
+                </li>
+              </ul>
             </div>
-
-            <div v-else class="landmark-view">
-              <div class="landmark-img-box">
-                <span class="placeholder-text">PHOTO</span>
-              </div>
-              <p class="description">{{ locationData?.description }}</p>
-            </div>
-          </div>
-
-          <div class="game-actions">
-            <button class="game-btn confirm" @click="$emit('close')">닫기</button>
           </div>
         </div>
       </div>
@@ -55,268 +39,95 @@
 </template>
 
 <script setup lang="ts">
-import type { QuestData, ShopItem, ItemCategory } from '@/types/quest';
+import type { MapQuest, MapQuestItem } from '@/types/game'; // game.ts 사용
+import BaseButton from '@/components/common/BaseButton.vue';
 
 interface Props {
   isOpen: boolean;
-  locationData: QuestData | null;
+  locationData: MapQuest | null; // MapQuest 타입 사용
   userMoney: number;
 }
 
 defineProps<Props>();
-defineEmits<{
-  (e: 'close'): void;
-  (e: 'buy-item', item: ShopItem): void;
-}>();
-
-const getCategoryIcon = (category: ItemCategory) => {
-  switch (category) {
-    case 'FOOD':
-      return '🍱';
-    case 'GIFT':
-      return '🎁';
-    default:
-      return '📦';
-  }
-};
+defineEmits(['close', 'buy-item']);
 </script>
 
 <style scoped>
+/* (스타일은 기존 그대로 유지) */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
   z-index: 2000;
-  backdrop-filter: blur(2px);
-}
-
-.game-card {
-  width: 90%;
-  max-width: 420px;
-  background: #ffffff;
-  border: 4px solid #1a1a1a;
-  border-radius: 16px;
-  box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.2);
   display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  max-height: 85vh; /* Limit height for long item lists */
-}
-
-/* --- Header --- */
-.game-header {
-  padding: 16px 20px;
-  border-bottom: 4px solid #1a1a1a;
-  display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 12px;
-  background-color: #f3f4f6;
-  color: #1a1a1a;
 }
-/* Header Colors per Type */
-.game-card.shop .game-header {
-  background-color: #4ade80; /* Bright Green */
+.modal-card {
+  background: white;
+  width: 90%;
+  max-width: 360px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
-.game-card.landmark .game-header {
-  background-color: #60a5fa; /* Blue */
+.modal-header {
+  background: #f3f4f6;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
-
-.title {
+.modal-header h3 {
   margin: 0;
-  flex: 1;
-  font-size: 1.4rem;
-  font-weight: 900;
-  letter-spacing: -0.5px;
-}
-.icon {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
 }
 .close-btn {
   background: none;
   border: none;
   font-size: 1.5rem;
-  font-weight: bold;
   cursor: pointer;
-  color: #1a1a1a;
 }
-
-/* --- Body --- */
-.game-body {
-  padding: 0; /* Let children handle padding or scroll */
-  background-color: #fff;
-  overflow-y: auto; /* Scrollable body */
-}
-
-/* --- Shop View Styling --- */
-.shop-view {
+.modal-body {
   padding: 20px;
 }
-
-.money-display {
-  background-color: #1a1a1a;
-  color: #fbbf24;
-  padding: 12px 16px;
-  border-radius: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 800;
-  font-size: 1.2rem;
+.description {
+  color: #666;
   margin-bottom: 20px;
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.1);
+  line-height: 1.5;
 }
-
-.items-list {
+.shop-section h4 {
+  margin: 0 0 10px 0;
+  color: #333;
+}
+.item-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
-
-.shop-item {
+.item-row {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 12px;
-  border: 3px solid #e5e7eb;
-  border-radius: 12px;
-  transition: all 0.1s;
-}
-.shop-item:hover {
-  border-color: #1a1a1a;
-  background-color: #fafafa;
-}
-
-.item-left {
-  display: flex;
   align-items: center;
-  gap: 12px;
-}
-.item-icon {
-  font-size: 1.8rem;
+  padding: 10px;
+  border: 1px solid #eee;
+  border-radius: 8px;
 }
 .item-info {
   display: flex;
   flex-direction: column;
 }
 .item-name {
-  font-weight: 700;
-  color: #1f2937;
+  font-weight: bold;
 }
 .item-cost {
   font-size: 0.9rem;
-  color: #6b7280;
-  font-weight: 600;
-}
-
-.buy-btn {
-  padding: 8px 16px;
-  background-color: #fbbf24;
-  border: 3px solid #1a1a1a;
-  border-radius: 8px;
-  font-weight: 800;
-  cursor: pointer;
-  box-shadow: 2px 2px 0 #1a1a1a;
-}
-.buy-btn:active {
-  transform: translate(2px, 2px);
-  box-shadow: none;
-}
-.buy-btn:disabled {
-  background-color: #e5e7eb;
-  border-color: #9ca3af;
-  color: #9ca3af;
-  box-shadow: none;
-  cursor: not-allowed;
-}
-
-/* --- Landmark View Styling --- */
-.landmark-view {
-  padding: 24px;
-  text-align: center;
-}
-
-.landmark-img-box {
-  width: 100%;
-  height: 180px;
-  background-color: #e5e7eb;
-  border: 3px dashed #9ca3af;
-  border-radius: 12px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.placeholder-text {
-  font-weight: 800;
-  color: #9ca3af;
-  letter-spacing: 2px;
-}
-
-.description {
-  font-size: 1.1rem;
-  line-height: 1.6;
-  color: #4b5563;
-  font-weight: 600;
-  word-break: keep-all;
-}
-
-/* --- Footer Actions --- */
-.game-actions {
-  display: flex;
-  border-top: 4px solid #1a1a1a;
-}
-
-.game-btn {
-  flex: 1;
-  padding: 18px;
-  font-size: 1.1rem;
-  font-weight: 800;
-  border: none;
-  cursor: pointer;
-}
-.game-btn.confirm {
-  background-color: #fbbf24;
-  color: #1a1a1a;
-}
-.game-btn.confirm:hover {
-  background-color: #f59e0b;
-}
-.game-btn:active {
-  background-color: #d97706;
-}
-
-/* --- Pop Animation --- */
-.pop-enter-active {
-  animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-.pop-leave-active {
-  animation: pop-out 0.2s ease-in;
-}
-
-@keyframes pop-in {
-  0% {
-    transform: scale(0.8);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-@keyframes pop-out {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(0.8);
-    opacity: 0;
-  }
+  color: #888;
 }
 </style>

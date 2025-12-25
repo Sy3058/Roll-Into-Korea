@@ -5,7 +5,6 @@
 
     <button class="inventory-btn" @click="isInventoryOpen = true">
       <img :src="bagIconPng" alt="가방" class="bag-icon-img" />
-
       <span v-if="playerStore.isBagFull" class="alert-dot">!</span>
     </button>
 
@@ -27,14 +26,12 @@
       <template #header>
         <h3 style="margin: 0; font-weight: bold">여행 종료</h3>
       </template>
-
       <template #body>
         <p style="margin: 0; font-size: 1.1rem; color: #333">정말로 여행을 끝내시겠습니까?</p>
         <p style="margin: 8px 0 0 0; font-size: 0.9rem; color: #888">
-          (여행을 끝내면 다시 돌아올 수 없습니다)
+          (획득한 아이템은 전리품으로 저장되며, 여행이 종료됩니다)
         </p>
       </template>
-
       <template #footer>
         <BaseButton variant="secondary" @click="isFinishModalOpen = false"> 취소 </BaseButton>
         <BaseButton variant="danger" @click="confirmFinish"> 종료하기 </BaseButton>
@@ -53,7 +50,12 @@ import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 // Types
-import type { QuestData, ShopItem } from '@/types/quest';
+import type { MapQuest, MapQuestItem } from '@/types/game';
+
+// API & Store
+import { gameApi } from '@/api/gameApi';
+import { usePlayerStore } from '@/stores/player';
+import { useGameStore } from '@/stores/game';
 
 // Composables
 import { useKakaoLoader } from '@/composables/map/useKakaoLoader';
@@ -61,25 +63,25 @@ import { useGeofencing } from '@/composables/map/useGeofencing';
 import { useMapWalker } from '@/composables/map/useMapWalker';
 import { useQuestSystem } from '@/composables/map/useQuestSystem';
 
-// Store
-import { usePlayerStore } from '@/stores/player';
-
 // Components
 import BaseButton from '@/components/common/BaseButton.vue';
 import BaseModal from '@/components/common/BaseModal.vue';
 import LocationModal from '@/components/map/LocationModal.vue';
 import InventoryModal from '@/components/game/InventoryModal.vue';
 
-// Image
+// Assets
 import bagIconPng from '@/assets/ui/basket.png';
 
+// Refs
 const mapRef = ref<HTMLElement | null>(null);
 const rvRef = ref<HTMLElement | null>(null);
+
 const router = useRouter();
 
-// Store 연결
+// Stores
 const playerStore = usePlayerStore();
-const { money } = storeToRefs(playerStore); // 반응형 유지
+const gameStore = useGameStore();
+const { money } = storeToRefs(playerStore);
 
 // UI States
 const isFinishModalOpen = ref(false);
@@ -87,9 +89,9 @@ const isLocationModalOpen = ref(false);
 const isInventoryOpen = ref(false);
 const isWarningVisible = ref(false);
 const warningMsg = ref('');
-const selectedQuest = ref<QuestData | null>(null);
+const selectedQuest = ref<MapQuest | null>(null);
 
-// Helper
+// Helper: Toast
 let warningTimeout: number | undefined = undefined;
 const showToast = (msg: string) => {
   warningMsg.value = msg;
@@ -103,85 +105,143 @@ const { loadScript } = useKakaoLoader();
 const { getBoundaryPath, isPointInPolygon } = useGeofencing();
 const { createWalker, updateWalkerPosition, updateWalkerRotation } = useMapWalker();
 
-// Pass click handler to QuestSystem
+// Quest System
 const { initQuests, updateQuestVisibility } = useQuestSystem((quest) => {
   selectedQuest.value = quest;
   isLocationModalOpen.value = true;
 });
 
-// 구매 로직
-const handleBuyItem = async (item: ShopItem) => {
-  // 중복 클릭 방지 (스토어 상태 활용)
+// Action: 아이템 구매
+const handleBuyItem = async (item: MapQuestItem) => {
   if (playerStore.isTransactionPending) return;
-
-  // 스토어 액션 호출
   const success = await playerStore.buyItem(item);
-
-  // UI 피드백
   if (success) {
-    showToast(`${item.name} 구매 완료!`);
-  } else {
-    showToast('잔액이 부족하거나 오류가 발생했습니다!');
+    showToast(`💳 ${item.name} 구매 완료!`);
   }
 };
 
+// Action: 여행 종료
 const confirmFinish = () => {
   isFinishModalOpen.value = false;
   router.push('/game');
 };
+
 const closeLocationModal = () => {
   isLocationModalOpen.value = false;
   selectedQuest.value = null;
 };
 
+// Lifecycle
 onMounted(async () => {
   if (!mapRef.value || !rvRef.value) return;
 
   try {
     await loadScript();
-    window.kakao.maps.load(() => {
+
+    window.kakao.maps.load(async () => {
       const kakao = window.kakao.maps;
 
-      // Start Point
-      const startPosition = new kakao.LatLng(37.578611, 126.977222);
+      // GameStore에서 현재 타일 정보 가져오기
+      const currentTile = gameStore.boardTiles[gameStore.currentTileIndex];
 
-      // Initialize
+      // 기본값 (광화문)
+      let startPosition = new kakao.LatLng(37.578611, 126.977222);
+      let landmarkId = '1';
+
+      if (currentTile) {
+        // 타일 정보가 있다면 ID와 좌표를 덮어쓰기
+        if (currentTile.id) landmarkId = currentTile.id;
+
+        if (currentTile.lat && currentTile.lng) {
+          console.log(
+            `시작 위치 설정: ${currentTile.name} (${currentTile.lat}, ${currentTile.lng})`,
+          );
+          startPosition = new kakao.LatLng(currentTile.lat, currentTile.lng);
+        }
+      }
+
+      // 맵 & 로드뷰 생성
       const map = new kakao.Map(mapRef.value!, { center: startPosition, level: 4 });
       const roadview = new kakao.Roadview(rvRef.value!);
       const rvClient = new kakao.RoadviewClient();
 
-      // Boundary
-      const boundaryPath = getBoundaryPath();
-      new kakao.Polygon({
-        map: map,
-        path: boundaryPath,
-        strokeWeight: 2,
-        strokeColor: '#FF0000',
-        fillColor: '#FF0000',
-        fillOpacity: 0.15,
-      });
+      let boundaryPath: kakao.maps.LatLng[] = [];
 
-      // Walker
+      // 미니맵에 퀘스트 마커 추가
+      const addMinimapMarkers = (quests: any[]) => {
+        quests.forEach((quest) => {
+          const imageSrc =
+            quest.type === 'SHOP'
+              ? 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png'
+              : 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png';
+
+          const imageSize = new kakao.Size(24, 35);
+          const markerImage = new kakao.MarkerImage(imageSrc, imageSize);
+
+          // 마커 생성 및 미니맵에 표시
+          new kakao.Marker({
+            map: map,
+            position: new kakao.LatLng(quest.lat, quest.lng),
+            title: quest.name,
+            image: markerImage,
+          });
+        });
+      };
+
+      // 해당 랜드마크의 맵 데이터(퀘스트, 경계선) 로드
+      try {
+        const response = await gameApi.fetchLandmarkMap(landmarkId);
+
+        if (response.success && response.data) {
+          const mapData = response.data;
+          boundaryPath = getBoundaryPath(mapData.boundary.points);
+          initQuests(mapData.quests);
+          addMinimapMarkers(mapData.quests);
+        }
+      } catch (e) {
+        console.error('맵 데이터 로드 실패:', e);
+        showToast('맵 데이터를 불러오는데 실패했습니다.');
+      }
+
+      // 경계선 그리기
+      if (boundaryPath.length > 0) {
+        new kakao.Polygon({
+          map: map,
+          path: boundaryPath,
+          strokeWeight: 2,
+          strokeColor: '#FF0000',
+          fillColor: '#FF0000',
+          fillOpacity: 0.15,
+        });
+      }
+
+      // 내 위치 마커 생성
       const walker = createWalker(startPosition);
       walker!.setMap(map);
 
-      // Events
+      // --- 이벤트 리스너 ---
       let lastValidPanoId: number | null = null;
 
       kakao.event.addListener(roadview, 'position_changed', () => {
         const newPos = roadview.getPosition();
         const currentPanoId = roadview.getPanoId();
 
-        if (isPointInPolygon(newPos, boundaryPath)) {
+        // 지오펜싱 (경계선이 있을 때만 동작)
+        if (boundaryPath.length > 0 && isPointInPolygon(newPos, boundaryPath)) {
           lastValidPanoId = currentPanoId;
           map.setCenter(newPos);
           updateWalkerPosition(newPos);
           updateQuestVisibility(roadview);
-        } else {
+        } else if (boundaryPath.length > 0) {
           showToast('지정된 구역을 벗어날 수 없습니다.');
           if (lastValidPanoId) {
             roadview.setPanoId(lastValidPanoId, roadview.getPosition());
           }
+        } else {
+          // 경계선 데이터가 없는 경우 자유 이동
+          map.setCenter(newPos);
+          updateWalkerPosition(newPos);
+          updateQuestVisibility(roadview);
         }
       });
 
@@ -189,24 +249,27 @@ onMounted(async () => {
         updateWalkerRotation(roadview.getViewpoint().pan);
       });
 
-      // Initial Load
+      // 초기 로드뷰 실행
       rvClient.getNearestPanoId(startPosition, 50, (panoId: number | null) => {
         if (panoId) {
           roadview.setPanoId(panoId, startPosition);
           lastValidPanoId = panoId;
-
-          initQuests(); // Initialize dummy quests
-          updateQuestVisibility(roadview);
+          setTimeout(() => {
+            updateQuestVisibility(roadview);
+          }, 500);
+        } else {
+          showToast('이 위치의 로드뷰를 찾을 수 없습니다.');
         }
       });
     });
   } catch (e) {
-    console.error(e);
+    console.error('카카오맵 로드 실패', e);
   }
 });
 </script>
 
 <style>
+/* MapWalker 스타일 (내 위치 표시) */
 .MapWalker {
   width: 0;
   height: 0;
@@ -269,6 +332,52 @@ div[id^='_box_util_'] {
   border-radius: 8px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
+
+.inventory-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  background-color: #fff;
+  border: 4px solid #1a1a1a;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: transform 0.1s ease;
+  padding: 10px;
+}
+.inventory-btn:active {
+  transform: scale(0.95);
+}
+.bag-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1));
+}
+
+.alert-dot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  background-color: #ef4444;
+  color: white;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+}
+
 .finish-btn {
   position: absolute;
   bottom: 30px;
@@ -276,6 +385,7 @@ div[id^='_box_util_'] {
   z-index: 10;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
+
 .warning-toast {
   position: absolute;
   bottom: 50px;
@@ -300,30 +410,5 @@ div[id^='_box_util_'] {
 .toast-leave-to {
   opacity: 0;
   transform: translate(-50%, 20px);
-}
-.inventory-btn {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 60px;
-  height: 60px;
-  background-color: #fff;
-  border: 4px solid #9c9c9c;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 10;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  transition: transform 0.1s ease;
-}
-.inventory-btn:active {
-  transform: scale(0.95);
-}
-.bag-icon-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
 }
 </style>

@@ -1,33 +1,28 @@
-export type QuestType = 'SHOP' | 'LANDMARK';
-export type ItemCategory = 'FOOD' | 'GIFT';
-
-export interface ShopItem {
+export interface ApiQuestItem {
   id: number;
   name: string;
   cost: number;
-  category: ItemCategory;
+  category: 'FOOD' | 'GIFT';
 }
 
-export interface QuestNode {
-  id: number;
+export interface ApiQuestMarker {
+  id: string;
   name: string;
   lat: number;
   lng: number;
-  type: QuestType;
-  description?: string; // 관광지
-  items?: ShopItem[]; // 상점
+  type: 'LANDMARK' | 'SHOP';
+  description?: string;
+  items?: ApiQuestItem[];
 }
 
-// 지도 경계
-export interface MapBoundary {
-  points: {
-    lat: number;
-    lng: number;
-  }[];
+export interface ApiBoundaryPoint {
+  lat: number;
+  lng: number;
 }
 
-// API 응답 데이터
-export interface LandmarkTripData {
-  quests: QuestNode[];
-  boundary: MapBoundary;
+export interface LandmarkMapData {
+  quests: ApiQuestMarker[];
+  boundary: {
+    points: ApiBoundaryPoint[];
+  };
 }

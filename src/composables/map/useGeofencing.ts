@@ -1,14 +1,17 @@
-// 구역 제한
+import type { ApiBoundaryPoint } from '@/types/quest';
+
 export const useGeofencing = () => {
-  // 경복궁 영역 좌표
-  const getBoundaryPath = () => {
+  /**
+   * 백엔드 좌표 배열을 받아서 카카오맵 Path로 변환
+   */
+  const getBoundaryPath = (points: ApiBoundaryPoint[]) => {
+    if (!window.kakao || !window.kakao.maps) return [];
+
     const kakao = window.kakao.maps;
-    return [
-      new kakao.LatLng(37.5832, 126.9747), // 좌상단
-      new kakao.LatLng(37.5832, 126.9802), // 우상단
-      new kakao.LatLng(37.5763, 126.9802), // 우하단
-      new kakao.LatLng(37.5763, 126.9747), // 좌하단
-    ];
+    // points가 없을 경우 대비
+    if (!points || points.length === 0) return [];
+
+    return points.map((p) => new kakao.LatLng(p.lat, p.lng));
   };
 
   // 플레이어가 지정된 구역 내에 있는지 확인
