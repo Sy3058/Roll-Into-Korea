@@ -80,7 +80,7 @@ export class GameBoard {
 
       // 데이터 병합
       const finalName = apiData?.name || structInfo.name;
-      const finalPrice = apiData?.reward || structInfo.price;
+      const finalReward = apiData?.reward || structInfo.reward;
       const isSpecialTile = structInfo.type === 'corner' || structInfo.type === 'chance';
       const finalType = isSpecialTile ? structInfo.type : apiData?.type || 'basic';
 
@@ -102,7 +102,7 @@ export class GameBoard {
         index: i,
         type: finalType,
         name: finalName,
-        price: finalPrice,
+        reward: finalReward,
         color: structInfo.color,
       });
 
@@ -262,7 +262,7 @@ export class GameBoard {
 
   /**
    * 현재 타일 정보 반환
-   * @returns index, name, type, price
+   * @returns index, name, type, reward
    */
   public getCurrentTileInfo(): TileInfo {
     const card = this.tileSprites[this.currentTileIndex];
@@ -270,7 +270,7 @@ export class GameBoard {
       index: this.currentTileIndex,
       name: card?.getName(),
       type: card?.getType(),
-      price: card?.getPrice(),
+      reward: card?.getReward(),
     };
   }
 

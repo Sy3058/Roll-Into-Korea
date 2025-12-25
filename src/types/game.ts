@@ -26,7 +26,7 @@ export interface BoardCardOptions {
   index: number;
   color?: ColorSource;
   name?: string;
-  price?: number;
+  reward?: number;
   backgroundColor?: ColorSource;
 }
 
@@ -42,7 +42,7 @@ export interface TileInfo {
   index: number;
   name?: string;
   type?: CardType;
-  price?: number;
+  reward?: number;
 }
 
 export interface BoardTile {
@@ -88,6 +88,54 @@ export interface UseDiceReturn {
   diceTextures: Ref<DiceTextureArray>;
   loadDiceAssets: () => Promise<void>;
   generateRoll: () => number;
+}
+
+// =================== Inventory ===================
+export interface ShopItem {
+  name: string;
+  cost: number;
+  category: 'FOOD' | 'GIFT';
+  description?: string;
+}
+
+// =================== Journey Data ===================
+export interface TrophyType {
+  id: number;
+  name: string;
+  description: string;
+  iconUrl: string;
+  badgeType: string; // 'TROPHY'
+}
+
+export interface SpotType {
+  id: number;
+  name: string;
+  description: string;
+  iconUrl: string;
+  badgeType: string; // 'SPOT'
+}
+
+export interface ItemType {
+  id: number;
+  name: string;
+  description: string;
+  iconUrl: string;
+  badgeType: string; // 'ITEM'
+}
+
+export interface JourneyData {
+  id: number;
+  nickname: string;
+  level: number;
+  levelName: string;
+  levelDescription: string;
+  levelStrength: number;
+  levelCapacity: number;
+
+  // 뱃지/수집품 관련
+  trophies: TrophyType[];
+  spots: SpotType[];
+  items: ItemType[];
 }
 
 // =================== API DTO ===================
@@ -182,4 +230,10 @@ export interface DonateRequest {
 
 export interface DonateResponse {
   money: number;
+}
+
+// Inventory
+export interface ItemTransactionRequest {
+  itemId: number;
+  cost?: number;
 }

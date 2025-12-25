@@ -15,7 +15,7 @@ export const BOARD_CONFIG = {
 export function getTileInfo(index: number) {
   let type: 'basic' | 'corner' | 'chance' | 'festival' = 'basic';
   let name = '';
-  const price = 0;
+  const reward = 0;
   let color = undefined;
 
   // 타입 결정
@@ -36,7 +36,7 @@ export function getTileInfo(index: number) {
     else color = 0xffff00;
   }
 
-  return { type, name, price, color };
+  return { type, name, reward, color };
 }
 
 /**

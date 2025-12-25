@@ -3,9 +3,17 @@
     <div id="roadview" ref="rvRef"></div>
     <div id="minimap" ref="mapRef"></div>
 
+    <button class="inventory-btn" @click="isInventoryOpen = true">
+      <img :src="bagIconPng" alt="가방" class="bag-icon-img" />
+
+      <span v-if="playerStore.isBagFull" class="alert-dot">!</span>
+    </button>
+
     <BaseButton class="finish-btn" variant="danger" size="lg" @click="isFinishModalOpen = true">
       여행 끝내기
     </BaseButton>
+
+    <InventoryModal :is-open="isInventoryOpen" @close="isInventoryOpen = false" />
 
     <LocationModal
       :is-open="isLocationModalOpen"
@@ -60,6 +68,10 @@ import { usePlayerStore } from '@/stores/player';
 import BaseButton from '@/components/common/BaseButton.vue';
 import BaseModal from '@/components/common/BaseModal.vue';
 import LocationModal from '@/components/map/LocationModal.vue';
+import InventoryModal from '@/components/game/InventoryModal.vue';
+
+// Image
+import bagIconPng from '@/assets/ui/basket.png';
 
 const mapRef = ref<HTMLElement | null>(null);
 const rvRef = ref<HTMLElement | null>(null);
@@ -72,6 +84,7 @@ const { money } = storeToRefs(playerStore); // 반응형 유지
 // UI States
 const isFinishModalOpen = ref(false);
 const isLocationModalOpen = ref(false);
+const isInventoryOpen = ref(false);
 const isWarningVisible = ref(false);
 const warningMsg = ref('');
 const selectedQuest = ref<QuestData | null>(null);
@@ -106,9 +119,9 @@ const handleBuyItem = async (item: ShopItem) => {
 
   // UI 피드백
   if (success) {
-    showToast(`💳 ${item.name} 구매 완료!`);
+    showToast(`${item.name} 구매 완료!`);
   } else {
-    showToast('💸 잔액이 부족하거나 오류가 발생했습니다!');
+    showToast('잔액이 부족하거나 오류가 발생했습니다!');
   }
 };
 
@@ -287,5 +300,30 @@ div[id^='_box_util_'] {
 .toast-leave-to {
   opacity: 0;
   transform: translate(-50%, 20px);
+}
+.inventory-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  background-color: #fff;
+  border: 4px solid #9c9c9c;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: transform 0.1s ease;
+}
+.inventory-btn:active {
+  transform: scale(0.95);
+}
+.bag-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 </style>

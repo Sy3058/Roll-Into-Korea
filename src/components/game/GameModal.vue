@@ -5,7 +5,7 @@
         <div class="game-card" :class="type">
           <div class="game-header">
             <span v-if="type === 'trip'" class="icon">📍</span>
-            <span v-if="type === 'pay'" class="icon">💸</span>
+            <span v-if="type === 'festival'" class="icon">🎉</span>
             <span v-if="type === 'chance'" class="icon">✨</span>
 
             <h2 class="title">{{ title }}</h2>
@@ -34,7 +34,7 @@ interface Props {
   isOpen: boolean;
   title: string;
   // 모달의 성격에 따라 색상을 다르게 주기 위한 타입
-  type?: 'normal' | 'trip' | 'pay' | 'chance';
+  type?: 'normal' | 'trip' | 'festival' | 'chance';
   confirmText?: string;
   cancelText?: string;
 }
@@ -98,11 +98,12 @@ const emit = defineEmits<{
 .game-card.trip .game-header {
   background-color: #4ade80;
 }
-.game-card.pay .game-header {
-  background-color: #f87171;
-}
 .game-card.chance .game-header {
   background-color: #c084fc;
+}
+.game-card.festival .game-header {
+  background-color: #fb923c;
+  color: white;
 }
 
 .title {

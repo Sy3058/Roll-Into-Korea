@@ -7,9 +7,11 @@
         <div class="profile-wrapper">
           <img :src="profileImg" @click="goToJourney" alt="Profile" class="profile-img" />
         </div>
-        <div class="money-info">
-          <div class="coin-icon">₩</div>
-          <span class="amount">{{ formattedMoney }}</span>
+        <div class="money-row">
+          <div class="money-info">
+            <div class="coin-icon">₩</div>
+            <span class="amount">{{ formattedMoney }}</span>
+          </div>
         </div>
       </div>
 
@@ -30,11 +32,23 @@
     </aside>
 
     <StreetViewModal
-      :is-open="showModal"
+      :is-open="showModal && modalType === 'trip'"
       :location-name="currentLocName"
       @close="handleCloseModal"
       @enter-streetview="handleEnterStreetView"
     />
+
+    <GameModal
+      :is-open="showModal && modalType === 'festival'"
+      title="축제 도착!"
+      type="festival"
+      confirm-text="축제 즐기기 (+50,000)"
+      cancel-text="닫기"
+      @confirm="handleFestivalConfirm"
+      @cancel="handleCloseModal"
+    >
+      <p>{{ currentLocName }}에 도착했습니다!<br />신나는 축제를 즐겨보세요.</p>
+    </GameModal>
   </div>
 </template>
 
@@ -45,10 +59,11 @@ import { storeToRefs } from 'pinia';
 
 import { GameBoard } from '@/game/GameBoard';
 import JourneyPanel from '@/components/journey/JourneyPanel.vue';
-import StreetViewModal from '@/components/ui/StreetViewModal.vue';
+import StreetViewModal from '@/components/game/StreetViewModal.vue';
+import GameModal from '@/components/game/GameModal.vue';
+import RollingDice from '@/components/ui/RollingDice.vue';
 import diceIcon from '@/assets/ui/dice_3D_detailed.png';
 import profileImg from '@/assets/images/profile.png';
-import RollingDice from '@/components/ui/RollingDice.vue';
 
 // Store
 import { usePlayerStore } from '@/stores/player';
@@ -57,6 +72,7 @@ import { BOARD_CONFIG } from '@/game/BoardUtils';
 
 // 모달 상태 관리
 const showModal = ref(false);
+const modalType = ref<'trip' | 'festival'>('trip');
 const currentLocName = ref('');
 
 // 라우터 관리
@@ -65,7 +81,7 @@ const router = useRouter();
 // Store 연결
 const playerStore = usePlayerStore();
 const gameStore = useGameStore();
-const { money, formattedMoney } = storeToRefs(playerStore);
+const { formattedMoney } = storeToRefs(playerStore);
 
 // Refs
 const boardContainer = ref<HTMLDivElement | null>(null);
@@ -81,7 +97,10 @@ const isRolling = ref(false); // 주사위 굴러가는 중 버튼 클릭 방지
 onMounted(async () => {
   if (!boardContainer.value) return;
 
+  // 게임 초기 데이터 로드
   await gameStore.fetchInitialData();
+  // 내 여행 정보 로드 (레벨, 돈 정보 등을 위해 유지)
+  await playerStore.fetchJourneyData();
 
   // 새로고침으로 중단된 이동이 있는지 확인
   if (gameStore.isTurnInProgress && gameStore.lastDiceResult) {
@@ -127,32 +146,58 @@ const checkArrivalEvent = async () => {
 
   // 현재 위치 정보 가져오기
   const info = game.getCurrentTileInfo();
-  console.log('도착 처리:', info.name);
-
+  console.log('도착 처리:', info.name, info.type);
   // Store에 최종 위치 저장
   gameStore.setPosition(info.index);
+  if (gameStore.isEventHandled) return;
 
-  // 장소 모달 열기
-  if (info.type === 'basic' || info.type === 'festival') {
-    if (gameStore.isEventHandled) {
-      console.log('이미 확인한 장소입니다');
-      return;
-    }
-
-    // 복구 로직일 때 처리 안 된 경우에만 서버에 요청
-    await gameStore.arriveAtTile(info.index);
+  // 1. 축제 도착 (Festival)
+  if (info.type === 'festival') {
+    onEnterFest(info);
+  }
+  // 2. 일반 여행지 (Basic)
+  else if (info.type === 'basic') {
+    await gameStore.arriveAtTile(info.index); // 돈 획득
 
     currentLocName.value = info.name || '알 수 없는 장소';
-
+    modalType.value = 'trip';
     setTimeout(() => {
       showModal.value = true;
     }, 300);
   }
 };
 
-onUnmounted(() => {
-  if (game) game.destroy();
-});
+/**
+ * 축제 도착 처리 함수
+ */
+const onEnterFest = async (info: any) => {
+  console.log('축제 도착!');
+
+  await gameStore.arriveAtTile(info.index);
+
+  currentLocName.value = info.name || '축제';
+  modalType.value = 'festival';
+
+  setTimeout(() => {
+    showModal.value = true;
+  }, 300);
+};
+
+/**
+ * 축제 모달 확인 버튼 클릭
+ */
+const handleFestivalConfirm = () => {
+  // confetti 효과 추가 필요
+  handleCloseModal();
+};
+
+/**
+ * 모달 닫기
+ */
+const handleCloseModal = () => {
+  showModal.value = false;
+  gameStore.completeEvent();
+};
 
 const goToJourney = () => {
   router.push('/journey');
@@ -196,14 +241,6 @@ const handleRollComplete = async (result: number) => {
 };
 
 /**
- * 모달 닫기
- */
-const handleCloseModal = () => {
-  showModal.value = false;
-  gameStore.completeEvent();
-};
-
-/**
  * 거리뷰 열기
  */
 const handleEnterStreetView = () => {
@@ -211,6 +248,10 @@ const handleEnterStreetView = () => {
   gameStore.completeEvent();
   router.push('/map');
 };
+
+onUnmounted(() => {
+  if (game) game.destroy();
+});
 </script>
 
 <style scoped>
@@ -273,6 +314,13 @@ const handleEnterStreetView = () => {
   transition:
     transform 0.2s ease,
     border-color 0.2s ease;
+}
+
+.money-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
 
 .money-info {

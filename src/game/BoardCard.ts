@@ -56,7 +56,7 @@ export class BoardCard extends Container {
 
   // Basic (색상, 관광지 이름, 가격 필요)
   private drawBasic() {
-    const { width, height, color, name, price } = this.options;
+    const { width, height, color, name, reward } = this.options;
     const headerHeight = height * 0.25; // 상단 25%를 색상으로 지정
 
     // 하얀 배경
@@ -98,21 +98,21 @@ export class BoardCard extends Container {
     }
 
     // 여행지 도착시 받게되는 용돈
-    if (price !== undefined) {
-      const priceText = new Text({
-        text: `₩${price}`,
+    if (reward !== undefined) {
+      const rewardText = new Text({
+        text: `₩${reward}`,
         style: new TextStyle({ fontSize: width * 0.14, fill: '#555555' }),
       });
-      priceText.anchor.set(0.5, 1);
-      priceText.x = width / 2;
-      priceText.y = height - height * 0.05;
-      this.contentContainer.addChild(priceText);
+      rewardText.anchor.set(0.5, 1);
+      rewardText.x = width / 2;
+      rewardText.y = height - height * 0.05;
+      this.contentContainer.addChild(rewardText);
     }
   }
 
   // 축제 카드 (5, 15, 25, 35)
   private drawFestival() {
-    const { width, height, name, price } = this.options;
+    const { width, height, name, reward } = this.options;
 
     // 연노랑 배경
     this.background
@@ -142,18 +142,6 @@ export class BoardCard extends Container {
       // 정중앙에 위치
       nameText.y = height / 2;
       this.contentContainer.addChild(nameText);
-    }
-
-    // 축제 도착시 받게되는 용돈
-    if (price !== undefined) {
-      const priceText = new Text({
-        text: `₩${price}`,
-        style: new TextStyle({ fontSize: width * 0.14, fill: '#555555' }),
-      });
-      priceText.anchor.set(0.5, 1);
-      priceText.x = width / 2;
-      priceText.y = height - height * 0.05;
-      this.contentContainer.addChild(priceText);
     }
   }
 
@@ -234,7 +222,7 @@ export class BoardCard extends Container {
   /**
    * 외부에서 가격을 조회할 수 있는 Getter
    */
-  public getPrice(): number {
-    return this.options.price || 0;
+  public getReward(): number {
+    return this.options.reward || 0;
   }
 }

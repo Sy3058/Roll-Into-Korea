@@ -22,15 +22,15 @@
                     <div class="item-icon">{{ getCategoryIcon(item.category) }}</div>
                     <div class="item-info">
                       <div class="item-name">{{ item.name }}</div>
-                      <div class="item-price">₩{{ item.price.toLocaleString() }}</div>
+                      <div class="item-cost">₩{{ item.cost.toLocaleString() }}</div>
                     </div>
                   </div>
                   <button
                     class="buy-btn"
-                    :disabled="userMoney < item.price"
+                    :disabled="userMoney < item.cost"
                     @click="$emit('buy-item', item)"
                   >
-                    {{ userMoney < item.price ? '부족' : '구매' }}
+                    {{ userMoney < item.cost ? '부족' : '구매' }}
                   </button>
                 </div>
               </div>
@@ -208,7 +208,7 @@ const getCategoryIcon = (category: ItemCategory) => {
   font-weight: 700;
   color: #1f2937;
 }
-.item-price {
+.item-cost {
   font-size: 0.9rem;
   color: #6b7280;
   font-weight: 600;

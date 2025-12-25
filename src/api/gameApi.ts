@@ -50,7 +50,7 @@ export const gameApi = {
 
   /**
    * 아이템 구매
-   * @param itemId
+   * @param payload
    * @returns
    */
   buyItem: async (payload: BuyItemRequest): Promise<ApiResponse<BuyItemResponse>> => {
@@ -62,7 +62,7 @@ export const gameApi = {
    * @param badgeId
    * @returns
    */
-  donateBadge: async (badgeId: number): Promise<ApiResponse<DonateResponse>> => {
+  donateItem: async (badgeId: number): Promise<ApiResponse<DonateResponse>> => {
     const payload: DonateRequest = { badgeId };
     return await axios.post(ENDPOINTS.DONATE, payload);
   },

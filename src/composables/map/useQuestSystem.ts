@@ -1,7 +1,8 @@
 import { ref, createVNode, render } from 'vue';
-import type { QuestData } from '@/types/quest';
+import type { QuestData } from '@/types/game'; // types/quest -> types/game 확인
 import QuestMarker from '@/components/map/QuestMarker.vue';
 
+// 거리 계산 함수 (기존 유지)
 const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -19,12 +20,12 @@ export const useQuestSystem = (onQuestClick: (quest: QuestData) => void) => {
   interface QuestObject extends QuestData {
     overlay: kakao.maps.CustomOverlay;
     isVisible: boolean;
-    containerElement: HTMLDivElement; // Store the container to clean up Vue later
+    containerElement: HTMLDivElement;
   }
 
   const quests = ref<QuestObject[]>([]);
 
-  // dummy data
+  // 🔥 [수정] price -> cost로 변경
   const rawQuestData: QuestData[] = [
     {
       id: 1,
@@ -41,9 +42,9 @@ export const useQuestSystem = (onQuestClick: (quest: QuestData) => void) => {
       lng: 126.975968,
       type: 'SHOP',
       items: [
-        { id: 101, name: 'Royal Tea', price: 4500, category: 'FOOD' },
-        { id: 102, name: 'Rice Cake', price: 3000, category: 'FOOD' },
-        { id: 103, name: 'Palace Keyring', price: 8000, category: 'GIFT' },
+        { id: 101, name: 'Royal Tea', cost: 4500, category: 'FOOD' }, // price -> cost
+        { id: 102, name: 'Rice Cake', cost: 3000, category: 'FOOD' }, // price -> cost
+        { id: 103, name: 'Palace Keyring', cost: 8000, category: 'GIFT' }, // price -> cost
       ],
     },
     {
@@ -60,18 +61,14 @@ export const useQuestSystem = (onQuestClick: (quest: QuestData) => void) => {
     if (!window.kakao || !window.kakao.maps) return;
 
     rawQuestData.forEach((data) => {
-      // 1. Create a container div
       const container = document.createElement('div');
-
-      // 2. Render Vue Component into the container
       const vnode = createVNode(QuestMarker, {
         name: data.name,
         type: data.type,
-        onClick: () => onQuestClick(data), // Pass the click handler
+        onClick: () => onQuestClick(data),
       });
       render(vnode, container);
 
-      // 3. Create Kakao Overlay
       const overlay = new window.kakao.maps.CustomOverlay({
         map: null,
         position: new window.kakao.maps.LatLng(data.lat, data.lng),
@@ -97,7 +94,6 @@ export const useQuestSystem = (onQuestClick: (quest: QuestData) => void) => {
 
     quests.value.forEach((q) => {
       const dist = getDistance(curLat, curLng, q.lat, q.lng);
-
       if (dist <= VISIBLE_RADIUS && !q.isVisible) {
         q.overlay.setMap(roadview);
         q.isVisible = true;

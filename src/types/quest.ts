@@ -4,7 +4,7 @@ export type ItemCategory = 'FOOD' | 'GIFT';
 export interface ShopItem {
   id: number;
   name: string;
-  price: number;
+  cost: number;
   category: ItemCategory;
 }
 

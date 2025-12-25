@@ -1,11 +1,11 @@
 <template>
   <GameModal
     :is-open="isOpen"
-    :title="`${locationName}`"
+    :title="locationName"
     type="trip"
     confirm-text="여행 떠나기"
     cancel-text="취소"
-    @confirm="onEnter"
+    @confirm="onEnterTrip"
     @cancel="onClose"
   >
     <div class="content-wrapper">
@@ -36,7 +36,7 @@ const emit = defineEmits<{
   (e: 'enter-streetview'): void;
 }>();
 
-const onEnter = () => {
+const onEnterTrip = () => {
   emit('enter-streetview');
 };
 
