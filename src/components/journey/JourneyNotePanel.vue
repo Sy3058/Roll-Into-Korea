@@ -210,7 +210,6 @@ const selectTab = (id: string) => {
   word-break: keep-all;
 }
 
-/* 탭 스타일 (기존 유지) */
 .binder-tabs {
   display: flex;
   flex-direction: column;

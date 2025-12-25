@@ -3,16 +3,16 @@
     <button class="edit-btn" @click="isModalOpen = true">정보 수정</button>
 
     <div class="img-wrapper">
-      <img :src="profileInfo.img" alt="Profile" class="profile-img" />
+      <img :src="profileImg" alt="Profile" class="profile-img" />
     </div>
     <div class="info-text">
-      <h2 class="profile-title">{{ profileInfo.name }}</h2>
+      <h2 class="profile-title">{{ nickname }}</h2>
     </div>
 
     <EditProfileModal
       :is-open="isModalOpen"
-      :initial-name="profileInfo.name"
-      :initial-img="profileInfo.img"
+      :initial-name="nickname"
+      :initial-img="profileImg"
       @close="isModalOpen = false"
       @save="onProfileUpdate"
     />
@@ -20,27 +20,28 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { ref, computed } from 'vue';
+import { useGameStore } from '@/stores/game';
+import { usePlayerStore } from '@/stores/player';
 import defaultImg from '@/assets/images/profile.png';
 import EditProfileModal from '@/components/ui/EditProfileModal.vue';
 
+const gameStore = useGameStore();
+const playerStore = usePlayerStore();
+
 const isModalOpen = ref(false);
 
-const profileInfo = reactive({
-  name: '사용자이름',
-  img: defaultImg,
+const profileImg = computed(() => {
+  return gameStore.memberInfo?.profileImgUrl || defaultImg;
 });
 
-/**
- * 변경된 정보로 프로필 업데이트
- * @param newData
- */
+const nickname = computed(() => {
+  return playerStore.journeyData?.nickname || '여행자';
+});
+
 const onProfileUpdate = (newData: { name: string; img: string }) => {
-  profileInfo.name = newData.name;
-  profileInfo.img = newData.img;
-
-  // TODO: API 호출 (axios.post...)
-
+  // TODO: 실제 API 업데이트 로직 구현 필요
+  console.log('Update Profile:', newData);
   isModalOpen.value = false;
 };
 </script>

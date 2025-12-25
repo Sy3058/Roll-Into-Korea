@@ -112,7 +112,7 @@ export class BoardCard extends Container {
 
   // 축제 카드 (5, 15, 25, 35)
   private drawFestival() {
-    const { width, height, name, reward } = this.options;
+    const { width, height, name } = this.options;
 
     // 연노랑 배경
     this.background
@@ -147,25 +147,39 @@ export class BoardCard extends Container {
 
   // Corner 카드
   private drawCorner() {
-    const { width, height, name } = this.options;
+    const { width, height, name, color } = this.options;
 
     this.background
       .rect(0, 0, width, height)
-      .fill(0xffe4e1)
+      .fill(color || 0xffe4e1)
       .stroke({ width: STYLE.BORDER_WIDTH, color: STYLE.BORDER_COLOR });
 
     const text = new Text({
       text: name || 'START',
       style: new TextStyle({
-        fontSize: width * 0.2,
+        fontSize: width * 0.18,
         fontWeight: '900',
-        fill: '#FF0000',
+        fill: '#333333',
+        align: 'center',
+        wordWrap: true,
+        wordWrapWidth: width,
       }),
     });
+
     text.anchor.set(0.5);
     text.x = width / 2;
     text.y = height / 2;
-    text.rotation = -Math.PI / 4; // Optional: Rotate text for style
+
+    if (name === 'START') {
+      text.rotation = -Math.PI / 4; // 우측 하단 (시작)
+    } else if (name === '휴식') {
+      text.rotation = Math.PI / 4; // 좌측 하단
+    } else if (name === '기차여행') {
+      text.rotation = (Math.PI * 3) / 4; // 좌측 상단
+    } else if (name === '버스여행') {
+      text.rotation = (-Math.PI * 3) / 4; // 우측 상단
+    }
+
     this.contentContainer.addChild(text);
   }
 

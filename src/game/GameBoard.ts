@@ -1,4 +1,13 @@
-import { Container, Graphics, Application, TextStyle, Text } from 'pixi.js';
+import {
+  Container,
+  Graphics,
+  Application,
+  TextStyle,
+  Text,
+  Sprite,
+  Texture,
+  Assets,
+} from 'pixi.js';
 import { BoardCard } from './BoardCard';
 import { BOARD_CONFIG, getBoardRect, getTileInfo } from './BoardUtils';
 import type { GameOptions, Particle, TileInfo } from '@/types/game';
@@ -8,7 +17,7 @@ export class GameBoard {
   // pixiJS 관련 변수
   private app: Application;
   private boardContainer = new Container();
-  private playerSprite!: Graphics;
+  private playerSprite!: Sprite;
   private tileSprites: BoardCard[] = [];
   private boardData: any[] = [];
 
@@ -41,7 +50,7 @@ export class GameBoard {
     container.appendChild(this.app.canvas as HTMLCanvasElement);
 
     this.createBoardLayout(); // 보드판 생성
-    this.createPlayer(); // 플레이어 생성
+    await this.createPlayer(); // 플레이어 생성
     this.updateCamera(); // 카메라 조정
 
     // 화면 크기 변경 이벤트
@@ -83,6 +92,7 @@ export class GameBoard {
       const finalReward = apiData?.reward || structInfo.reward;
       const isSpecialTile = structInfo.type === 'corner' || structInfo.type === 'chance';
       const finalType = isSpecialTile ? structInfo.type : apiData?.type || 'basic';
+      const finalColor = apiData?.color || structInfo.color;
 
       // 슬롯의 물리적 좌표 및 크기
       const slotX = offset + rect.x * BASE_UNIT_PX;
@@ -103,7 +113,7 @@ export class GameBoard {
         type: finalType,
         name: finalName,
         reward: finalReward,
-        color: structInfo.color,
+        color: finalColor,
       });
 
       // 위치, 회전 축
@@ -168,17 +178,37 @@ export class GameBoard {
   /**
    * 플레이어 생성
    */
-  private createPlayer() {
-    this.playerSprite = new Graphics()
-      .circle(0, 0, 15)
-      .fill(0xff0000)
-      .stroke({ width: 3, color: 0xffffff });
+  private async createPlayer() {
+    try {
+      const texture = await Assets.load('/assets/player.png');
 
-    // 시작 위치로 이동 (기존에 저장된 위치로)
+      // 스프라이트 생성
+      this.playerSprite = new Sprite(texture);
+      this.playerSprite.anchor.set(0.5);
+
+      // 3. 크기 조절 (50px 목표)
+      const TARGET_SIZE = 80;
+      const scale = TARGET_SIZE / Math.max(texture.width, texture.height);
+      this.playerSprite.scale.set(scale);
+      this.playerSprite.rotation = Math.PI;
+    } catch (e) {
+      console.warn('플레이어 이미지 로드 실패, 기본 도형으로 대체합니다.', e);
+
+      // 이미지가 없으면 빨간 동그라미 그리기
+      const graphics = new Graphics()
+        .circle(0, 0, 15)
+        .fill(0xff0000)
+        .stroke({ width: 3, color: 0xffffff });
+
+      this.playerSprite = graphics as any; // Sprite 자리에 Graphics를 넣기 위한 임시 처리
+    }
+
+    // 5. 시작 위치로 이동
     const startTile = this.tileSprites[this.currentTileIndex];
     if (startTile) {
       this.playerSprite.position.set(startTile.x, startTile.y);
     }
+
     this.boardContainer.addChild(this.playerSprite);
   }
 

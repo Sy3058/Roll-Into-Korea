@@ -25,6 +25,17 @@ export const useGameStore = defineStore(
     // Store
     const playerStore = usePlayerStore();
 
+    // 색상 지정
+    const REGION_COLORS: Record<string, string> = {
+      '0': '#A2D2FF',
+      '1': '#BDE0FE',
+      '2': '#FFC8DD',
+      '3': '#FFAFCC',
+      '4': '#D0F4DE',
+      '5': '#FCF6BD',
+      '6': '#CDB4DB',
+    };
+
     // Actions
 
     /**
@@ -68,6 +79,7 @@ export const useGameStore = defineStore(
             imgUrl: '',
             description: '',
             reward: 0,
+            color: '',
             raw: null,
           };
 
@@ -82,6 +94,9 @@ export const useGameStore = defineStore(
               tile.lat = land.lat;
               tile.lng = land.lng;
               tile.raw = land;
+              if (land.regionCode) {
+                tile.color = REGION_COLORS[land.regionCode] || '#F0F0F0';
+              }
             }
           } else if (struct.type === 'festival') {
             const fest = festivalQueue.pop();

@@ -50,6 +50,7 @@ export interface BoardTile {
   index: number; // 0~39 인덱스
   id: string; // 백엔드 ID (없으면 "empty_1")
   name: string; // 장소 이름 (또는 'CHANCE' 등)
+  color: string;
   type: 'basic' | 'corner' | 'chance' | 'festival'; // 타일 종류
 
   // 랜드마크/축제 데이터

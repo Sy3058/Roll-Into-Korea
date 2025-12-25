@@ -9,31 +9,60 @@ export const BOARD_CONFIG = {
   BASE_UNIT_PX: 60,
 };
 
+// 코너 색상 정의 (파스텔톤 모던 마카롱 테마)
+const CORNER_COLORS = {
+  START: '#FFAFCC', // 시작 (체리 블라썸)
+  REST: '#D0F4DE', // 쉼터 (페일 그린)
+  TRAIN: '#CDB4DB', // 기차 (오키드 퍼플)
+  BUS: '#FCF6BD', // 버스 (버터 옐로우)
+};
+
 /**
  * 타일 정보 관련 함수
  */
 export function getTileInfo(index: number) {
+  // 기본값 설정
   let type: 'basic' | 'corner' | 'chance' | 'festival' = 'basic';
   let name = '';
   const reward = 0;
-  let color = undefined;
+  let color: string | number | undefined = undefined;
 
-  // 타입 결정
-  if (index % (BOARD_CONFIG.TILES_PER_SIDE + 1) === 0) {
+  // 1. 코너 타일 (0, 10, 20, 30) - 우선 순위 가장 높음
+  if (index === 0) {
     type = 'corner';
-    name = index === 0 ? 'START' : 'CORNER';
-  } else if ([4, 17, 23, 34].includes(index)) {
-    type = 'chance';
-  } else if ([5, 15, 25, 35].includes(index)) {
-    type = 'festival';
+    name = 'START';
+    color = CORNER_COLORS.START;
+  } else if (index === 10) {
+    type = 'corner';
+    name = '휴식';
+    color = CORNER_COLORS.REST;
+  } else if (index === 20) {
+    type = 'corner';
+    name = '기차여행';
+    color = CORNER_COLORS.TRAIN;
+  } else if (index === 30) {
+    type = 'corner';
+    name = '버스여행';
+    color = CORNER_COLORS.BUS;
   }
-
-  // 색상 결정 (Basic 타입일 때만)
-  if (type === 'basic') {
-    if (index < 10) color = 0xff0000;
-    else if (index < 20) color = 0x00ff00;
-    else if (index < 30) color = 0x0000ff;
-    else color = 0xffff00;
+  // 2. 특수 타일 (찬스)
+  else if ([4, 17, 23, 34].includes(index)) {
+    type = 'chance';
+    name = 'CHANCE';
+    color = '#008080'; // 찬스 기본색 (회색 등)
+  }
+  // 3. 특수 타일 (축제)
+  else if ([5, 15, 25, 35].includes(index)) {
+    type = 'festival';
+    name = '축제';
+    color = '#FFFFFF';
+  }
+  // 4. 일반 타일
+  else {
+    type = 'basic';
+    name = `지역 ${index}`;
+    // 일반 타일의 색상은 Store의 regionCode 로직을 따르므로 여기선 null 또는 기본값
+    color = '#FFFFFF';
   }
 
   return { type, name, reward, color };
@@ -43,6 +72,7 @@ export function getTileInfo(index: number) {
  * 타일 인덱스에 따른 그리드 좌표(x, y, w, h) 계산
  */
 export function getBoardRect(index: number): BoardRect {
+  // ... (좌표 계산 로직은 기존과 동일하므로 그대로 유지) ...
   const { UNIT_H, UNIT_W, TILES_PER_SIDE } = BOARD_CONFIG;
   const totalSize = UNIT_H * 2 + TILES_PER_SIDE * UNIT_W;
 
