@@ -1,5 +1,4 @@
 // 게임 저장, 로드, 점수 전송 API
-import type { LandmarkMapData, LandmarkTripData } from '@/types/quest';
 import axios from './axios';
 import type {
   ApiResponse,
@@ -7,7 +6,9 @@ import type {
   BuyItemResponse,
   DonateRequest,
   DonateResponse,
+  GameExitData,
   GameInitData,
+  LandmarkMapData,
   RewardRequest,
   RewardResponse,
 } from '@/types/game';
@@ -19,6 +20,7 @@ const ENDPOINTS = {
   ITEM: '/game/item',
   DONATE: '/game/donate',
   LANDMARK_MAP: (id: string) => `/map/landmark/${id}`,
+  EXIT: '/game/exit',
 };
 
 export const gameApi = {
@@ -38,15 +40,6 @@ export const gameApi = {
   claimReward: async (amount: number): Promise<ApiResponse<RewardResponse>> => {
     const payload: RewardRequest = { amount };
     return await axios.post(ENDPOINTS.REWARD, payload);
-  },
-
-  /**
-   * 여행지 내부 장소 받아오기
-   * @param landmarkId - 여행지 Id
-   * @returns
-   */
-  getLandmarkDetail: async (landmarkId: string): Promise<ApiResponse<LandmarkTripData>> => {
-    return await axios.get(`/game/landmark/${landmarkId}`);
   },
 
   /**
@@ -75,5 +68,12 @@ export const gameApi = {
    */
   fetchLandmarkMap: async (landmarkId: string): Promise<ApiResponse<LandmarkMapData>> => {
     return await axios.get(ENDPOINTS.LANDMARK_MAP(landmarkId));
+  },
+
+  /**
+   * 여행 종료 및 정산 요청
+   */
+  exitGame: async (): Promise<ApiResponse<GameExitData>> => {
+    return await axios.post(ENDPOINTS.EXIT);
   },
 };

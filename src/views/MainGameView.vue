@@ -31,23 +31,24 @@
       </div>
     </aside>
 
-    <StreetViewModal
-      :is-open="showModal && modalType === 'trip'"
-      :location-name="currentLocName"
-      @close="handleCloseModal"
-      @enter-streetview="handleEnterStreetView"
-    />
-
     <GameModal
-      :is-open="showModal && modalType === 'festival'"
-      title="축제 도착!"
-      type="festival"
-      confirm-text="축제 즐기기 (+50,000)"
+      :is-open="showModal"
+      :title="currentLocName"
+      :type="modalType"
+      :img-src="currentLocImg"
+      :confirm-text="modalType === 'festival' ? '축제 즐기기 (+50,000)' : '여행 떠나기'"
       cancel-text="닫기"
-      @confirm="handleFestivalConfirm"
+      @confirm="handleModalConfirm"
       @cancel="handleCloseModal"
     >
-      <p>{{ currentLocName }}에 도착했습니다!<br />신나는 축제를 즐겨보세요.</p>
+      <p v-if="modalType === 'festival'">
+        {{ currentLocName }}에 도착했습니다!<br />
+        신나는 축제를 즐겨보세요.
+      </p>
+      <p v-else>
+        {{ currentLocName }}에 도착했습니다.<br />
+        이곳을 탐험해볼까요?
+      </p>
     </GameModal>
   </div>
 </template>
@@ -59,7 +60,7 @@ import { storeToRefs } from 'pinia';
 
 import { GameBoard } from '@/game/GameBoard';
 import JourneyPanel from '@/components/journey/JourneyPanel.vue';
-import StreetViewModal from '@/components/game/StreetViewModal.vue';
+// import StreetViewModal from '@/components/game/StreetViewModal.vue'; // ❌ 제거
 import GameModal from '@/components/game/GameModal.vue';
 import RollingDice from '@/components/ui/RollingDice.vue';
 import diceIcon from '@/assets/ui/dice_3D_detailed.png';
@@ -74,6 +75,7 @@ import { BOARD_CONFIG } from '@/game/BoardUtils';
 const showModal = ref(false);
 const modalType = ref<'trip' | 'festival'>('trip');
 const currentLocName = ref('');
+const currentLocImg = ref(''); // 🆕 [신규] 이미지 URL 상태
 
 // 라우터 관리
 const router = useRouter();
@@ -90,39 +92,29 @@ const diceRef = ref<InstanceType<typeof RollingDice> | null>(null);
 
 // Game Instance
 let game: GameBoard | null = null;
-const isMoving = ref(false); // 이동 중 버튼 클릭 방지
-const isRolling = ref(false); // 주사위 굴러가는 중 버튼 클릭 방지
+const isMoving = ref(false);
+const isRolling = ref(false);
 
 // Lifecycle
 onMounted(async () => {
   if (!boardContainer.value) return;
 
-  // 게임 초기 데이터 로드 (처음 한 번만)
   if (!gameStore.boardTiles || gameStore.boardTiles.length === 0) {
     await gameStore.fetchInitialData();
   } else {
     console.log('저장된 보드 데이터를 불러옵니다.');
   }
 
-  // 내 여행 정보 로드 (레벨, 돈 정보 등을 위해 유지)
   await playerStore.fetchJourneyData();
 
-  // 새로고침으로 중단된 이동이 있는지 확인
   if (gameStore.isTurnInProgress && gameStore.lastDiceResult) {
     console.log(`중단된 턴 복구: 주사위 ${gameStore.lastDiceResult}`);
-
-    // 강제로 위치 계산
     const totalTiles = BOARD_CONFIG.TOTAL_TILES || 40;
     const nextIndex = (gameStore.currentTileIndex + gameStore.lastDiceResult) % totalTiles;
-
-    // 이동 완료 처리
     gameStore.setPosition(nextIndex);
-
-    // 턴 종료
     gameStore.endTurn();
   }
 
-  // Game Engine 초기화
   game = new GameBoard({
     container: boardContainer.value,
     initialIndex: gameStore.currentTileIndex,
@@ -132,7 +124,6 @@ onMounted(async () => {
     },
   });
 
-  // 복구된 상태라면 도착한 칸의 이벤트 실행
   if (gameStore.lastDiceResult === null && gameStore.currentTileIndex > 0) {
     setTimeout(() => {
       console.log('도착 이벤트 복구 실행');
@@ -149,22 +140,25 @@ onMounted(async () => {
 const checkArrivalEvent = async () => {
   if (!game) return;
 
-  // 현재 위치 정보 가져오기
   const info = game.getCurrentTileInfo();
   console.log('도착 처리:', info.name, info.type);
-  // Store에 최종 위치 저장
+  console.log(`[${info.name}] 이미지 데이터:`, info.imgUrl);
+
   gameStore.setPosition(info.index);
   if (gameStore.isEventHandled) return;
 
-  // 1. 축제 도착 (Festival)
+  // 1. 축제 도착
   if (info.type === 'festival') {
     onEnterFest(info);
   }
-  // 2. 일반 여행지 (Basic)
+  // 2. 일반 여행지
   else if (info.type === 'basic') {
-    await gameStore.arriveAtTile(info.index); // 돈 획득
+    await gameStore.arriveAtTile(info.index); // 보상 획득
 
     currentLocName.value = info.name || '알 수 없는 장소';
+
+    currentLocImg.value = info.imgUrl || '';
+
     modalType.value = 'trip';
     setTimeout(() => {
       showModal.value = true;
@@ -177,28 +171,34 @@ const checkArrivalEvent = async () => {
  */
 const onEnterFest = async (info: any) => {
   console.log('축제 도착!');
-
   await gameStore.arriveAtTile(info.index);
 
   currentLocName.value = info.name || '축제';
-  modalType.value = 'festival';
+  currentLocImg.value = info.imgUrl || '';
 
+  modalType.value = 'festival';
   setTimeout(() => {
     showModal.value = true;
   }, 300);
 };
 
 /**
- * 축제 모달 확인 버튼 클릭
+ * 통합 모달 확인 버튼 핸들러
  */
+const handleModalConfirm = () => {
+  if (modalType.value === 'festival') {
+    handleFestivalConfirm();
+  } else {
+    // 일반 여행지일 경우 맵(로드뷰)으로 이동
+    handleEnterStreetView();
+  }
+};
+
 const handleFestivalConfirm = () => {
   // confetti 효과 추가 필요
   handleCloseModal();
 };
 
-/**
- * 모달 닫기
- */
 const handleCloseModal = () => {
   showModal.value = false;
   gameStore.completeEvent();
@@ -208,9 +208,6 @@ const goToJourney = () => {
   router.push('/journey');
 };
 
-/**
- * 주사위 굴리기 버튼 관리
- */
 const onRollClick = () => {
   if (diceRef.value && !isRolling.value && !isMoving.value) {
     gameStore.startTurn();
@@ -219,35 +216,20 @@ const onRollClick = () => {
   }
 };
 
-/**
- * 주사위 결과 수신 및 이동 로직
- * @param result
- */
 const handleRollComplete = async (result: number) => {
   console.log('주사위 결과:', result);
   isRolling.value = false;
 
   if (game) {
     isMoving.value = true;
-
-    // 이동 전 상태 저장 (새로고침 대비)
     gameStore.setLastDiceResult(result);
-
-    // 이동 애니메이션
     await game.playTurn(result);
-
-    // 이동 완료 후 턴 종료
     gameStore.endTurn();
-
     checkArrivalEvent();
-
     isMoving.value = false;
   }
 };
 
-/**
- * 거리뷰 열기
- */
 const handleEnterStreetView = () => {
   showModal.value = false;
   gameStore.completeEvent();
@@ -260,18 +242,19 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* (CSS는 기존과 동일하게 유지) */
 /* 전체 레이아웃: 좌우 분할 */
 .main-layout {
   display: flex;
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background-color: #f8f4e8; /* 전체 배경 */
+  background-color: #f8f4e8;
 }
 
 /* 왼쪽: 게임 보드 */
 .board-section {
-  flex: 1; /* 남은 공간 모두 차지 */
+  flex: 1;
   position: relative;
   background-color: #f8f4e8;
   overflow: hidden;
@@ -288,7 +271,6 @@ onUnmounted(() => {
   z-index: 10;
 }
 
-/* 1. 상단 패널 (돈, 프로필) */
 .status-panel {
   height: 250px;
   background-color: #c5d89d;
@@ -296,10 +278,9 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  border-bottom: 2px solid #fff; /* 구분선 */
+  border-bottom: 2px solid #fff;
 }
 
-/* 프로필 들어갈 자리 */
 .profile-wrapper {
   flex: 1;
   display: flex;
@@ -307,7 +288,6 @@ onUnmounted(() => {
   justify-content: center;
   margin-bottom: 10px;
 }
-
 .profile-img {
   width: 7vw;
   height: 7vw;
@@ -327,7 +307,6 @@ onUnmounted(() => {
   justify-content: center;
   gap: 10px;
 }
-
 .money-info {
   display: flex;
   align-items: center;
@@ -349,7 +328,6 @@ onUnmounted(() => {
   font-weight: bold;
   font-size: 0.9rem;
 }
-
 .amount {
   font-family: 'Arial', sans-serif;
   font-weight: 800;
@@ -357,106 +335,39 @@ onUnmounted(() => {
   color: #333;
 }
 
-/* 2. 중단 패널 (저니 노트 리스트) */
 .journey-panel {
-  flex: 1; /* 남은 세로 공간 차지 */
-  background-color: #c5d89d; /* 이미지 배경색 */
+  flex: 1;
+  background-color: #c5d89d;
   padding: 24px;
-  overflow-y: auto; /* 내용 많으면 스크롤 */
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.journey-header h3 {
-  margin: 0 0 4px 0;
-  font-size: 1rem;
-  font-weight: 700;
-  color: #333;
-}
-
-.journey-header p {
-  margin: 0;
-  font-size: 0.8rem;
-  color: #666;
-}
-
-.journey-list {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.item-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  font-size: 0.9rem;
-  color: #444;
-  font-weight: 600;
-}
-
-.more-btn {
-  background: none;
-  border: none;
-  font-size: 0.8rem;
-  color: #888;
-  cursor: pointer;
-}
-
-.badge-row {
-  display: flex;
-  gap: 12px;
-}
-
-.badge-circle {
-  width: 48px;
-  height: 48px;
-  background-color: #6b7280; /* 이미지의 짙은 회색/남색 */
-  border-radius: 50%;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  font-weight: 300;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.badge-circle:hover {
-  transform: scale(1.05);
-  background-color: #555;
-}
-
-/* 사이드바 하단 영역 정렬을 위한 컨테이너 */
 .dice-control-area {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-bottom: 6vh; /* 바닥에서 조금 띄움 */
-  margin-top: auto; /* 사이드바 맨 아래로 밀어내기 */
+  padding-bottom: 6vh;
+  margin-top: auto;
 }
 
-/* --- 3D Button Core Styles (제공해주신 CSS 기반 수정) --- */
+/* --- 3D Button Core Styles --- */
 .btn-3d {
   position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-
-  /* 정사각형 모양 만들기 */
   width: 12vw;
   min-width: 90px;
   height: 90px;
-  padding: 0; /* 패딩 제거하고 width/height로 조절 */
-
+  padding: 0;
   font-size: 16px;
   font-weight: bold;
   color: white;
-  border-radius: 12px; /* 둥근 모서리 */
+  border-radius: 12px;
   text-align: center;
   transition: top 0.01s linear;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
@@ -464,35 +375,30 @@ onUnmounted(() => {
   border: none;
   outline: none;
 }
-
-/* 눌렸을 때 효과 */
 .btn-3d:active {
-  top: 9px; /* 버튼 높이만큼 내려감 */
+  top: 9px;
   box-shadow:
     0 0 0 1px #000 inset,
     0 0 0 2px rgba(255, 255, 255, 0.15) inset,
     0 0 0 1px rgba(0, 0, 0, 0.4);
 }
 
-/* --- Black Color Variant (이전 버튼 색상 #333 적용) --- */
 .btn-3d.black {
   background-color: #333333;
   box-shadow:
     0 0 0 1px #000 inset,
-    /* 안쪽 테두리 */ 0 0 0 2px rgba(255, 255, 255, 0.15) inset,
-    /* 상단 하이라이트 */ 0 9px 0 0 #1a1a1a,
-    /* 3D 깊이감 (어두운 회색) */ 0 9px 0 1px rgba(0, 0, 0, 0.4),
-    /* 그림자 테두리 */ 0 9px 8px 1px rgba(0, 0, 0, 0.5); /* 바닥 그림자 */
+    0 0 0 2px rgba(255, 255, 255, 0.15) inset,
+    0 9px 0 0 #1a1a1a,
+    0 9px 0 1px rgba(0, 0, 0, 0.4),
+    0 9px 8px 1px rgba(0, 0, 0, 0.5);
 }
-
 .btn-3d.black:hover {
-  background-color: #444444; /* 호버 시 약간 밝게 */
+  background-color: #444444;
 }
 
-/* 비활성화 상태 (굴리는 중) */
 .btn-3d:disabled {
   background-color: #555;
-  top: 9px; /* 눌린 상태로 고정 */
+  top: 9px;
   box-shadow:
     0 0 0 1px #000 inset,
     0 0 0 2px rgba(255, 255, 255, 0.1) inset,
@@ -501,29 +407,25 @@ onUnmounted(() => {
   opacity: 0.8;
 }
 
-/* 내부 콘텐츠 스타일 */
 .btn-content {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  margin-top: -6px; /* 3D 높이 고려하여 시각적 중앙 정렬 */
+  margin-top: -6px;
 }
-
 .dice-icon-small {
   width: 32px;
   height: 32px;
   object-fit: contain;
   filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
 }
-
 .btn-text {
   font-size: 0.9rem;
   font-weight: 800;
   letter-spacing: 1px;
 }
 
-/* 반응형 처리: 화면이 너무 좁아지면 레이아웃 조정 */
 @media (max-width: 1024px) {
   .sidebar-section {
     width: 300px;

@@ -10,21 +10,21 @@
       <div class="list-item" v-for="category in collections" :key="category.id">
         <div class="item-header">
           <span class="category-name">{{ category.label }}</span>
+          <span class="count">{{ category.obtainedCount }}개</span>
         </div>
 
         <div class="badge-row">
           <div
-            v-for="badge in category.badges.slice(0, 4)"
+            v-for="badge in category.badges"
             :key="badge.id"
             class="badge-item"
-            :class="{ locked: !badge.isObtained }"
+            :class="{ locked: badge.isLocked }"
           >
             <div class="badge-circle">
-              <span v-if="badge.isObtained" class="emoji-icon">{{ badge.icon }}</span>
-              <span v-else class="text-icon">?</span>
+              <span class="emoji-icon">
+                {{ badge.isLocked ? '🔒' : getBadgeEmoji(badge.id, badge.name, category.id) }}
+              </span>
             </div>
-
-            <div v-if="!badge.isObtained" class="lock-overlay">🔒</div>
           </div>
         </div>
       </div>
@@ -33,79 +33,108 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { usePlayerStore } from '@/stores/player';
 
 const router = useRouter();
+const playerStore = usePlayerStore();
 
 const handleMoreClick = () => {
   router.push('/journey');
 };
 
-// --- 데이터 인터페이스 ---
-interface Badge {
-  id: number;
-  name: string;
-  icon: string;
-  isObtained: boolean;
-}
+// 🎨 아이콘 매핑 함수
+const getBadgeEmoji = (id: number, name: string, type: string) => {
+  // 예외적으로 매핑할 특수 아이콘들
+  const iconMap: Record<number, string> = {
+    1: '🗼',
+    2: '🏯',
+    3: '🌊',
+    4: '🏙️',
+    5: '🏢',
+    7: '🍞',
+    8: '🔑',
+    9: '👗',
+    10: '🧢',
+    99: '👣',
+    98: '💰',
+    97: '🏃',
+  };
+  if (iconMap[id]) return iconMap[id];
 
-interface BadgeCategory {
-  id: string;
-  label: string;
-  badges: Badge[];
-}
+  // 기본 아이콘
+  if (type === 'trophy') return '🏆';
+  if (type === 'spot') return '📍';
+  if (type === 'item') return '🎁';
+  return '✨';
+};
 
-// --- 더미 데이터 (Binder 코드 내용 활용) ---
-const collections = ref<BadgeCategory[]>([
-  {
-    id: 'achieve',
-    label: '칭호',
-    badges: [
-      { id: 99, name: '첫 걸음', icon: '👣', isObtained: true },
-      { id: 98, name: '부자 되기', icon: '💰', isObtained: false },
-      { id: 97, name: '달리기', icon: '🏃', isObtained: false },
-      { id: 96, name: '점프', icon: '💨', isObtained: true },
-      { id: 95, name: '비행', icon: '✈️', isObtained: false },
-    ],
-  },
-  {
-    id: 'place',
-    label: '여행지',
-    badges: [
-      { id: 1, name: '남산 타워', icon: '🗼', isObtained: true },
-      { id: 2, name: '경복궁', icon: '🏯', isObtained: true },
-      { id: 3, name: '한강', icon: '🌊', isObtained: false },
-      { id: 4, name: '도시', icon: '🏙️', isObtained: false },
-      { id: 5, name: '타워', icon: '🏢', isObtained: true },
-    ],
-  },
-  {
-    id: 'souvenir',
-    label: '기념품',
-    badges: [
-      { id: 7, name: '계란빵', icon: '🍞', isObtained: true },
-      { id: 8, name: '열쇠', icon: '🔑', isObtained: false },
-      { id: 9, name: '한복', icon: '👗', isObtained: false },
-      { id: 10, name: '모자', icon: '🧢', isObtained: true },
-    ],
-  },
-]);
+// 🔥 [핵심 로직] 4칸을 항상 채워주는 함수
+const fillWithPlaceholders = (items: any[] | undefined) => {
+  const MAX_SLOTS = 4;
+  const realItems = items ? [...items] : [];
+  const result = [];
+
+  // 1. 실제 아이콘 채우기 (최대 4개)
+  for (let i = 0; i < MAX_SLOTS; i++) {
+    if (i < realItems.length) {
+      // 실제 뱃지
+      result.push({
+        ...realItems[i],
+        isLocked: false, // 획득함
+      });
+    } else {
+      // 빈 자리 (Placeholder)
+      result.push({
+        id: `locked-${i}`, // 고유 키
+        name: '???',
+        isLocked: true, // 잠김
+      });
+    }
+  }
+  return result;
+};
+
+// 데이터 매핑
+const collections = computed(() => {
+  const data = playerStore.journeyData;
+  // 데이터가 로드되지 않았더라도 기본 구조는 보여줍니다.
+
+  return [
+    {
+      id: 'trophy',
+      label: '🏆 트로피',
+      obtainedCount: data?.trophies?.length || 0,
+      badges: fillWithPlaceholders(data?.trophies),
+    },
+    {
+      id: 'spot',
+      label: '📍 여행지',
+      obtainedCount: data?.spots?.length || 0,
+      badges: fillWithPlaceholders(data?.spots),
+    },
+    {
+      id: 'item',
+      label: '🎒 수집품',
+      obtainedCount: data?.items?.length || 0,
+      badges: fillWithPlaceholders(data?.items),
+    },
+  ];
+});
 </script>
 
 <style scoped>
 .journey-panel {
   flex: 1;
-  /* 이전 사이드바 스타일 배경색 */
   background-color: transparent;
-  padding: 20px 10px; /* 사이드바 패딩 */
+  padding: 20px 10px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-/* 헤더 스타일 */
 .journey-header {
   position: relative;
   margin-bottom: 10px;
@@ -123,18 +152,15 @@ const collections = ref<BadgeCategory[]>([
 }
 
 .more-btn {
-  /* Positioning Logic */
   position: absolute;
-  top: 0; /* Aligns with the top of the header (Title) */
-  right: 0; /* Aligns to the far right */
-
-  /* Visual Styles */
+  top: 0;
+  right: 0;
   background: none;
   border: none;
-  font-size: 0.8rem; /* 0.8rem matches the <p> tag size nicely */
+  font-size: 0.8rem;
   color: #999;
   cursor: pointer;
-  padding: 0; /* Remove default padding for better alignment */
+  padding: 0;
 }
 
 .journey-list {
@@ -149,68 +175,56 @@ const collections = ref<BadgeCategory[]>([
   align-items: center;
   margin-bottom: 12px;
 }
-
 .category-name {
   font-size: 0.95rem;
   font-weight: 700;
   color: #444;
 }
+.count {
+  font-size: 0.8rem;
+  color: #888;
+}
 
 .badge-row {
   display: flex;
   gap: 12px;
-  /* 가로로 나열 */
+  /* 줄바꿈 없이 한 줄에 보여주기 */
+  flex-wrap: nowrap;
 }
 
-/* --- Binder Style Badges (가져온 CSS) --- */
 .badge-item {
-  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   transition: transform 0.2s;
 }
-
 .badge-item:hover {
   transform: translateY(-3px);
 }
 
 .badge-circle {
-  /* 사이드바에 맞게 크기 약간 조정 (80px -> 56px) */
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background-color: #f9f9f9; /* 기본 밝은 회색 */
+  background-color: #fff;
   border: 2px solid #eee;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem; /* 이모지 크기 */
-  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
-  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  font-size: 1.5rem;
+  line-height: 1;
 }
 
-/* 텍스트 아이콘 (물음표 등) */
-.text-icon {
-  font-size: 1.2rem;
-  color: #ccc;
-  font-weight: bold;
-}
-
-/* Locked State Styles */
+/* 🔥 [추가] 잠긴 상태 스타일: 약간 흐릿하게 처리 */
 .badge-item.locked .badge-circle {
-  background-color: #e0e0e0; /* 잠겼을 때 어두운 회색 */
-  border-color: #ccc;
-  color: transparent; /* 아이콘 숨김 */
+  background-color: #f5f5f5; /* 회색 배경 */
+  border-color: #e0e0e0;
+  opacity: 0.7;
 }
 
-.lock-overlay {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 1.2rem;
-  opacity: 0.6;
-  pointer-events: none; /* 클릭 방해 금지 */
+.emoji-icon {
+  display: inline-block;
+  transform: translateY(1px);
 }
 </style>

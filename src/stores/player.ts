@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { gameApi } from '@/api/gameApi';
-import type { BuyItemRequest, ShopItem } from '@/types/game';
+import type { JourneyData, BuyItemRequest, GameExitData, ShopItem } from '@/types/game';
 import { journeyApi } from '@/api/journeyApi';
 
 export interface InventoryItem extends ShopItem {
@@ -14,6 +14,7 @@ export const usePlayerStore = defineStore(
     // State
     const money = ref(0); // 초기 자금
     const inventory = ref<InventoryItem[]>([]); // 보유 아이템 목록
+    const journeyData = ref<JourneyData | null>(null);
     const isTransactionPending = ref(false); // 결제 진행 중 여부
 
     // 서버 동기화 상태
@@ -40,11 +41,39 @@ export const usePlayerStore = defineStore(
           level.value = data.level;
           levelName.value = data.levelName;
           maxCapacity.value = data.levelCapacity;
+          journeyData.value = data;
 
           console.log(`내 정보 불러오기 완료: Lv.${data.level}`);
         }
       } catch (error) {
         console.error('Journey 데이터 로드 실패:', error);
+      }
+    };
+
+    /**
+     * 게임 종료 후 획득한 badge 정보 journey 데이터에 추가
+     */
+    const updateEarnedBadges = async (result: GameExitData) => {
+      if (!journeyData.value) {
+        console.log('JourneyData가 존재하지 않습니다.');
+        await fetchJourneyData();
+        return;
+      }
+      console.log('획득한 뱃지를 추가합니다.');
+
+      // 트로피 추가
+      if (result.trophies.length > 0) {
+        journeyData.value.trophies.push(...result.trophies);
+      }
+
+      // 여행지 추가
+      if (result.spots.length > 0) {
+        journeyData.value.spots.push(...result.spots);
+      }
+
+      // 아이템 추가
+      if (result.items.length > 0) {
+        journeyData.value.items.push(...result.items);
       }
     };
 
@@ -128,6 +157,10 @@ export const usePlayerStore = defineStore(
       }
     };
 
+    const clearInventory = () => {
+      inventory.value = [];
+    };
+
     return {
       money,
       inventory,
@@ -137,9 +170,12 @@ export const usePlayerStore = defineStore(
       maxCapacity,
       formattedMoney,
       isBagFull,
+      journeyData,
       fetchJourneyData,
+      updateEarnedBadges,
       buyItem,
       donateItem,
+      clearInventory,
     };
   },
   {

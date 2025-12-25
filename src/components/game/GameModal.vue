@@ -12,7 +12,13 @@
           </div>
 
           <div class="game-body">
-            <slot></slot>
+            <div v-if="imgSrc" class="modal-hero-image">
+              <img :src="imgSrc" :alt="title" />
+            </div>
+
+            <div class="content-text">
+              <slot></slot>
+            </div>
           </div>
 
           <div class="game-actions">
@@ -37,12 +43,14 @@ interface Props {
   type?: 'normal' | 'trip' | 'festival' | 'chance';
   confirmText?: string;
   cancelText?: string;
+  imgSrc?: string;
 }
 
 withDefaults(defineProps<Props>(), {
   type: 'normal',
   confirmText: '확인',
   cancelText: '취소',
+  imgSrc: '',
 });
 
 const emit = defineEmits<{
@@ -120,12 +128,26 @@ const emit = defineEmits<{
 
 /* 4. 본문 스타일 */
 .game-body {
-  padding: 30px 20px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  text-align: center;
-  color: #4b5563;
+  padding: 0;
   background-color: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 이미지 래퍼 */
+.modal-hero-image {
+  width: 100%;
+  height: 200px;
+  border-bottom: 4px solid #1a1a1a;
+  background-color: #eee;
+  overflow: hidden;
+}
+
+.modal-hero-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 비율 유지하며 꽉 채우기 */
+  display: block;
 }
 
 /* 5. 액션 버튼 (Placeholder) */

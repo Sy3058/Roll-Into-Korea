@@ -121,9 +121,28 @@ const handleBuyItem = async (item: MapQuestItem) => {
 };
 
 // Action: 여행 종료
-const confirmFinish = () => {
-  isFinishModalOpen.value = false;
-  router.push('/game');
+const confirmFinish = async () => {
+  try {
+    // 서버에 종료 요청
+    const response = await gameApi.exitGame();
+
+    if (response.success && response.data) {
+      const result = response.data;
+      // 뱃지 업데이트
+      await playerStore.updateEarnedBadges(result);
+      const earnedBadges =
+        (result.items?.length || 0) + (result.spots?.length || 0) + (result.trophies?.length || 0);
+
+      alert(`여행 종료!\n배지 ${earnedBadges}개 획득!`);
+      playerStore.clearInventory();
+      isFinishModalOpen.value = false;
+      router.push('/game');
+    } else {
+      showToast(response.message || '여행 종료 처리에 실패했습니다.');
+    }
+  } catch (e) {
+    console.error('여행 종료 API 오류:', e);
+  }
 };
 
 const closeLocationModal = () => {

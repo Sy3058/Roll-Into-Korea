@@ -43,6 +43,7 @@ export interface TileInfo {
   name?: string;
   type?: CardType;
   reward?: number;
+  imgUrl?: string;
 }
 
 export interface BoardTile {
@@ -268,4 +269,11 @@ export interface LandmarkMapData {
   boundary: {
     points: BoundaryPoint[];
   };
+}
+
+// Exit
+export interface GameExitData {
+  trophies: TrophyType[];
+  items: ItemType[];
+  spots: SpotType[];
 }

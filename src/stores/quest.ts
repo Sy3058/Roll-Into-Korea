@@ -1,13 +1,13 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { gameApi } from '@/api/gameApi';
-import type { LandmarkTripData } from '@/types/quest';
+import type { LandmarkMapData } from '@/types/game';
 
 export const useQuestStore = defineStore(
   'quest',
   () => {
     // State
-    const currentTripData = ref<LandmarkTripData | null>(null);
+    const currentTripData = ref<LandmarkMapData | null>(null);
     const isLoading = ref(false);
 
     // Actions
@@ -16,7 +16,7 @@ export const useQuestStore = defineStore(
       resetQuestData();
 
       try {
-        const response = await gameApi.getLandmarkDetail(landmarkId);
+        const response = await gameApi.fetchLandmarkMap(landmarkId);
 
         if (response.success) {
           currentTripData.value = response.data;
